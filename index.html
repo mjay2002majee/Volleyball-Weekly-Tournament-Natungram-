@@ -1,0 +1,3926 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Natungram Volleyball Weekly Tournament</title>
+
+  <!-- FIREBASE COMPAT SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/10.9.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.9.0/firebase-database-compat.js"></script>
+
+  <style>
+    :root {
+      --bg-gradient: radial-gradient(circle at top, #1e1b4b, #090d16);
+      --bg-dark: #090d16;
+      --card-bg: #131d31;
+      --card-border: #1e293b;
+      --input-bg: #0b1120;
+      --inner-card-bg: #0b1120;
+      --arena-bg: radial-gradient(circle at center, #1e293b, #0b1120);
+      --accent-gold: #f59e0b;
+      --team-a: #ef4444;
+      --team-b: #3b82f6;
+      --team-c: #10b981;
+      --text: #f8fafc;
+      --text-muted: #94a3b8;
+      --box-front-bg: linear-gradient(145deg, #1e293b, #0f172a);
+      --box-back-bg: linear-gradient(145deg, #0f172a, #1e1b4b);
+      --numpad-bg: #0f172a;
+      --sidebar-bg: #0b1120;
+      --sub-bg: #020617;
+      --th-bg: #0b1120;
+      --btn-secondary: #334155;
+      --btn-secondary-hover: #475569;
+    }
+
+    body.light-mode {
+      --bg-gradient: radial-gradient(circle at top, #f1f5f9, #e2e8f0);
+      --bg-dark: #f8fafc;
+      --card-bg: #ffffff;
+      --card-border: #cbd5e1;
+      --input-bg: #ffffff;
+      --inner-card-bg: #f8fafc;
+      --arena-bg: radial-gradient(circle at center, #f8fafc, #e2e8f0);
+      --accent-gold: #d97706;
+      --team-a: #dc2626;
+      --team-b: #2563eb;
+      --team-c: #059669;
+      --text: #0f172a;
+      --text-muted: #64748b;
+      --box-front-bg: linear-gradient(145deg, #ffffff, #f1f5f9);
+      --box-back-bg: linear-gradient(145deg, #f8fafc, #e2e8f0);
+      --numpad-bg: #f1f5f9;
+      --sidebar-bg: #ffffff;
+      --sub-bg: #f8fafc;
+      --th-bg: #f1f5f9;
+      --btn-secondary: #e2e8f0;
+      --btn-secondary-hover: #cbd5e1;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      transition: background-color 0.25s ease, color 0.25s ease, border-color 0.25s ease;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    html, body {
+      width: 100%;
+      max-width: 100vw;
+      overflow-x: hidden;
+    }
+
+    body {
+      background: var(--bg-gradient);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 10px 8px;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      width: 100%;
+    }
+
+    header h1 {
+      font-size: clamp(1.25rem, 4.5vw, 2.2rem);
+      color: var(--accent-gold);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      line-height: 1.25;
+      padding: 0 4px;
+      word-break: break-word;
+    }
+
+    header p {
+      color: var(--text-muted);
+      font-size: 0.85rem;
+      max-width: 600px;
+      padding: 0 4px;
+    }
+
+    .status-badge-row {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .live-status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 14px;
+      background: rgba(16, 185, 129, 0.15);
+      border: 1px solid var(--team-c);
+      color: var(--team-c);
+      border-radius: 30px;
+      font-size: 0.8rem;
+      font-weight: 700;
+    }
+
+    .role-status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
+      border-radius: 30px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .role-status-pill.admin-pill {
+      background: rgba(245, 158, 11, 0.2);
+      border: 1px solid var(--accent-gold);
+      color: var(--accent-gold);
+    }
+    .role-status-pill.viewer-pill {
+      background: rgba(59, 130, 246, 0.2);
+      border: 1px solid var(--team-b);
+      color: var(--team-b);
+    }
+
+    .pulse-dot {
+      width: 8px;
+      height: 8px;
+      background: var(--team-c);
+      border-radius: 50%;
+      animation: pulseSync 1.5s infinite;
+      flex-shrink: 0;
+    }
+
+    @keyframes pulseSync {
+      0% { transform: scale(0.9); opacity: 0.7; }
+      50% { transform: scale(1.3); opacity: 1; }
+      100% { transform: scale(0.9); opacity: 0.7; }
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      width: 100%;
+      max-width: 440px;
+      margin-top: 4px;
+    }
+
+    .header-actions button {
+      flex: 1;
+      min-width: 0;
+    }
+
+    button {
+      min-height: 40px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      user-select: none;
+      white-space: nowrap;
+    }
+
+    .theme-toggle-btn {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      color: var(--text);
+      padding: 8px 10px;
+      border-radius: 8px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      gap: 4px;
+    }
+    .theme-toggle-btn:hover { border-color: var(--accent-gold); }
+
+    .nav-saved-btn {
+      background: linear-gradient(135deg, #8b5cf6, #6d28d9);
+      color: #fff;
+      font-weight: 700;
+      border: none;
+      padding: 8px 10px;
+      border-radius: 8px;
+      font-size: 0.82rem;
+      gap: 4px;
+      box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
+    }
+    .nav-saved-btn:hover { filter: brightness(1.1); }
+
+    .top-bar-btn {
+      background: linear-gradient(135deg, #f59e0b, #d97706);
+      color: #0f172a;
+      font-weight: 800;
+      border: none;
+      padding: 8px 12px;
+      border-radius: 8px;
+      font-size: 0.82rem;
+      gap: 4px;
+      box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
+    }
+    .top-bar-btn:hover { filter: brightness(1.1); }
+
+    .view-page { display: none; width: 100%; }
+    .view-page.active-view { display: block; }
+
+    .main-grid {
+      display: grid;
+      grid-template-columns: 320px 1fr 340px;
+      gap: 16px;
+      max-width: 1440px;
+      margin: 0 auto;
+      width: 100%;
+    }
+
+    @media (max-width: 1120px) {
+      .main-grid {
+        grid-template-columns: 100%;
+        width: 100%;
+      }
+    }
+
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      padding: 12px 10px;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+      margin-bottom: 16px;
+      width: 100%;
+      min-width: 0;
+      overflow: hidden;
+    }
+
+    h2 {
+      font-size: 1.1rem;
+      margin-bottom: 12px;
+      padding-bottom: 6px;
+      border-bottom: 2px solid var(--card-border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-weight: 700;
+      width: 100%;
+    }
+
+    .pot-select-group { margin-bottom: 10px; width: 100%; }
+    label { font-size: 0.82rem; color: var(--text-muted); font-weight: bold; }
+
+    select, input {
+      width: 100%;
+      max-width: 100%;
+      padding: 8px 10px;
+      border-radius: 8px;
+      border: 1px solid var(--card-border);
+      background: var(--input-bg);
+      color: var(--text);
+      font-size: 0.92rem;
+      outline: none;
+      min-width: 0;
+    }
+
+    select:focus, input:focus { border-color: var(--accent-gold); }
+
+    .add-player-box {
+      display: flex;
+      gap: 6px;
+      margin-top: 8px;
+      width: 100%;
+    }
+
+    .add-player-box input {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .btn-add {
+      width: 70px;
+      flex-shrink: 0;
+      background: var(--btn-secondary);
+      color: var(--text);
+      font-weight: bold;
+      border: 1px solid var(--card-border);
+      border-radius: 8px;
+      padding: 0 8px;
+    }
+    .btn-add:hover { background: var(--btn-secondary-hover); }
+
+    .player-list {
+      max-height: 380px;
+      overflow-y: auto;
+      margin-top: 12px;
+      padding-right: 2px;
+      width: 100%;
+    }
+
+    .player-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: var(--inner-card-bg);
+      padding: 8px 10px;
+      border-radius: 8px;
+      margin-bottom: 6px;
+      font-size: 0.88rem;
+      border: 1px solid var(--card-border);
+      border-left: 4px solid var(--accent-gold);
+      width: 100%;
+      box-sizing: border-box;
+      gap: 6px;
+    }
+
+    .player-item.drafted {
+      opacity: 0.55;
+      border-left-color: #64748b;
+    }
+
+    .player-name-span {
+      font-weight: 600;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      min-width: 0;
+      flex: 1;
+    }
+    .player-item.drafted .player-name-span {
+      text-decoration: line-through;
+      color: var(--text-muted);
+    }
+
+    .item-actions {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      flex-shrink: 0;
+    }
+
+    .btn-remove-pot {
+      background: rgba(239, 68, 68, 0.15);
+      border: 1px solid #ef4444;
+      color: #ef4444;
+      padding: 4px 8px;
+      border-radius: 6px;
+      font-size: 0.75rem;
+      width: auto;
+      min-height: 30px;
+      white-space: nowrap;
+    }
+    .btn-remove-pot:hover { background: #ef4444; color: #fff; }
+
+    .btn-undo {
+      background: rgba(245, 158, 11, 0.15);
+      border: 1px solid var(--accent-gold);
+      color: var(--accent-gold);
+      padding: 4px 8px;
+      border-radius: 6px;
+      font-size: 0.75rem;
+      width: auto;
+      min-height: 30px;
+      white-space: nowrap;
+    }
+
+    /* MYSTERY BOX ARENA */
+    .mystery-stage {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: var(--arena-bg);
+      border-radius: 12px;
+      padding: 16px 8px;
+      min-height: 420px;
+      position: relative;
+      border: 1px solid var(--card-border);
+      width: 100%;
+      overflow: hidden;
+    }
+
+    .turn-status {
+      font-size: clamp(0.95rem, 3vw, 1.2rem);
+      color: var(--accent-gold);
+      font-weight: 700;
+      text-align: center;
+      margin-bottom: 4px;
+    }
+
+    .stage-sub {
+      color: var(--text-muted);
+      font-size: 0.8rem;
+      margin-bottom: 12px;
+      text-align: center;
+      padding: 0 6px;
+    }
+
+    .box-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(95px, 1fr));
+      gap: 10px;
+      width: 100%;
+      max-width: 580px;
+      perspective: 1000px;
+      margin: 8px 0 16px;
+    }
+
+    .mystery-card {
+      height: 125px;
+      position: relative;
+      transform-style: preserve-3d;
+      transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+      cursor: pointer;
+    }
+    .mystery-card:hover { transform: translateY(-3px); }
+    .mystery-card.opened {
+      transform: rotateY(180deg);
+      cursor: default;
+    }
+
+    .card-face {
+      position: absolute;
+      inset: 0;
+      backface-visibility: hidden;
+      border-radius: 10px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    }
+
+    .card-front {
+      background: var(--box-front-bg);
+      border: 2px solid var(--accent-gold);
+      color: var(--text);
+    }
+
+    .card-front .chest-icon {
+      font-size: 2rem;
+      filter: drop-shadow(0 0 8px rgba(245, 158, 11, 0.3));
+      margin-bottom: 2px;
+    }
+
+    .card-front .box-number {
+      font-size: 0.78rem;
+      color: var(--accent-gold);
+      font-weight: 800;
+      letter-spacing: 1px;
+    }
+
+    .card-back {
+      background: var(--box-back-bg);
+      border: 2px solid #10b981;
+      transform: rotateY(180deg);
+      padding: 6px;
+      text-align: center;
+    }
+
+    .card-back .revealed-name {
+      font-size: 0.88rem;
+      font-weight: 800;
+      color: var(--text);
+      margin-bottom: 4px;
+      word-break: break-word;
+    }
+
+    .card-back .revealed-team {
+      font-size: 0.68rem;
+      font-weight: 700;
+      padding: 2px 5px;
+      border-radius: 4px;
+    }
+
+    .shuffle-btn {
+      background: var(--btn-secondary);
+      color: var(--text);
+      font-size: 0.85rem;
+      font-weight: 700;
+      padding: 8px 20px;
+      border-radius: 25px;
+      border: 1px solid var(--card-border);
+      width: auto;
+    }
+    .shuffle-btn:hover {
+      background: var(--btn-secondary-hover);
+      border-color: var(--accent-gold);
+    }
+
+    /* TEAMS PANEL */
+    .team-controls-box {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 10px;
+      width: 100%;
+    }
+    .team-controls-box input {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .teams-container {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      max-height: 480px;
+      overflow-y: auto;
+      width: 100%;
+    }
+
+    .team-card {
+      background: var(--inner-card-bg);
+      border-radius: 8px;
+      padding: 10px;
+      border: 1px solid var(--card-border);
+      border-left: 5px solid var(--accent-gold);
+      width: 100%;
+    }
+
+    .team-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 6px;
+    }
+
+    .team-card h3 { font-size: 0.98rem; margin: 0; }
+
+    .btn-delete-team {
+      background: transparent;
+      border: none;
+      color: #ef4444;
+      cursor: pointer;
+      font-size: 0.85rem;
+      width: auto;
+      padding: 2px 4px;
+      min-height: auto;
+    }
+
+    .team-roster { list-style: none; min-height: 30px; }
+    .team-roster li {
+      font-size: 0.84rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 5px 0;
+      border-bottom: 1px dashed var(--card-border);
+    }
+
+    .roster-info { display: flex; align-items: center; gap: 6px; min-width: 0; }
+    .roster-info span:first-child {
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 150px;
+    }
+
+    .role-tag {
+      font-size: 0.68rem;
+      background: var(--btn-secondary);
+      padding: 2px 5px;
+      border-radius: 4px;
+      color: var(--text);
+      white-space: nowrap;
+    }
+
+    .btn-team-remove {
+      background: transparent;
+      border: none;
+      color: #ef4444;
+      font-size: 1.1rem;
+      font-weight: bold;
+      width: auto;
+      padding: 0 4px;
+      opacity: 0.7;
+      min-height: auto;
+    }
+
+    /* REVEAL MODAL */
+    .announcement {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.75);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      opacity: 0;
+      pointer-events: none;
+      transition: 0.25s opacity;
+      backdrop-filter: blur(4px);
+      padding: 16px;
+    }
+    .announcement.show { opacity: 1; pointer-events: auto; }
+
+    .announcement-card {
+      background: var(--card-bg);
+      border: 2px solid var(--accent-gold);
+      border-radius: 16px;
+      padding: 20px;
+      text-align: center;
+      max-width: 340px;
+      width: 100%;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+    }
+
+    .card-reveal-icon {
+      font-size: 2.8rem;
+      margin-bottom: 6px;
+    }
+
+    .announcement-card h4 {
+      color: var(--accent-gold);
+      text-transform: uppercase;
+      font-size: 0.8rem;
+      letter-spacing: 2px;
+      margin-bottom: 6px;
+    }
+
+    .announcement-card .pick-name {
+      font-size: 1.8rem;
+      color: var(--text);
+      font-weight: 800;
+      margin: 4px 0;
+    }
+
+    .announcement-card .pick-dest {
+      font-size: 1rem;
+      font-weight: 600;
+      margin-bottom: 16px;
+      color: var(--text-muted);
+    }
+
+    .announcement-card button {
+      background: var(--accent-gold);
+      color: #0f172a;
+      font-weight: 800;
+      font-size: 0.95rem;
+      padding: 10px 20px;
+      border-radius: 25px;
+      border: none;
+      width: auto;
+    }
+
+    /* TOURNAMENT VIEW & MATCHES */
+    .tournament-container {
+      max-width: 1200px;
+      margin: 0 auto;
+      width: 100%;
+      min-width: 0;
+    }
+
+    .view-nav-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+      background: var(--card-bg);
+      padding: 10px 12px;
+      border-radius: 10px;
+      border: 1px solid var(--card-border);
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .btn-back {
+      width: auto;
+      background: var(--btn-secondary);
+      color: var(--text);
+      font-weight: bold;
+      padding: 6px 12px;
+      font-size: 0.85rem;
+    }
+
+    .table-container {
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      border-radius: 8px;
+      width: 100%;
+    }
+    table.points-table {
+      width: 100%;
+      min-width: 520px;
+      border-collapse: collapse;
+      text-align: center;
+      font-size: 0.88rem;
+    }
+    table.points-table th, table.points-table td {
+      padding: 10px 6px;
+      border-bottom: 1px solid var(--card-border);
+    }
+    table.points-table th {
+      background: var(--th-bg);
+      color: var(--accent-gold);
+      font-weight: 700;
+    }
+    table.points-table tr:hover { background: rgba(148, 163, 184, 0.08); }
+
+    .fixture-controls-bar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+      background: var(--inner-card-bg);
+      padding: 10px;
+      border-radius: 8px;
+      border: 1px solid var(--card-border);
+      margin-bottom: 14px;
+      width: 100%;
+    }
+    .fixture-controls-bar select {
+      flex: 1 1 120px;
+      min-width: 0;
+    }
+    .btn-fixture-action {
+      width: auto;
+      padding: 8px 12px;
+      font-weight: bold;
+      font-size: 0.85rem;
+    }
+
+    .matches-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(290px, 1fr));
+      gap: 14px;
+      margin-top: 12px;
+      width: 100%;
+    }
+
+    .match-box {
+      background: var(--inner-card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 10px;
+      padding: 12px;
+      position: relative;
+      width: 100%;
+    }
+
+    .match-box.final-box {
+      border: 2px solid var(--accent-gold);
+      background: var(--card-bg);
+      box-shadow: 0 0 16px rgba(245, 158, 11, 0.15);
+    }
+    .match-box.final-box .match-header { border-bottom-color: var(--accent-gold); }
+
+    .match-box.locked {
+      opacity: 0.65;
+      filter: grayscale(0.4);
+    }
+
+    .match-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px dashed var(--card-border);
+      padding-bottom: 6px;
+      margin-bottom: 10px;
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      gap: 4px;
+    }
+
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .btn-table-toggle, .btn-lock-toggle {
+      width: auto;
+      padding: 4px 6px;
+      font-size: 0.72rem;
+      border-radius: 6px;
+      font-weight: 700;
+      border: 1px solid var(--card-border);
+      background: var(--btn-secondary);
+      color: var(--text);
+      min-height: 26px;
+    }
+    .btn-table-toggle.on {
+      background: rgba(16, 185, 129, 0.15);
+      border-color: #10b981;
+      color: #10b981;
+    }
+    .btn-table-toggle.off {
+      background: rgba(239, 68, 68, 0.15);
+      border-color: #ef4444;
+      color: #ef4444;
+    }
+    .btn-lock-toggle.is-locked {
+      background: rgba(239, 68, 68, 0.2);
+      border-color: #ef4444;
+      color: #ef4444;
+    }
+    .btn-lock-toggle.is-unlocked {
+      background: rgba(16, 185, 129, 0.15);
+      border-color: #10b981;
+      color: #10b981;
+    }
+
+    .btn-delete-match {
+      background: transparent;
+      border: none;
+      color: #ef4444;
+      font-size: 0.9rem;
+      width: auto;
+      padding: 0 4px;
+      min-height: auto;
+    }
+
+    .match-status-badge {
+      background: var(--btn-secondary);
+      padding: 2px 6px;
+      border-radius: 8px;
+      font-size: 0.7rem;
+      color: var(--text);
+      font-weight: 600;
+    }
+    .match-status-badge.live {
+      background: #ef4444;
+      color: white;
+      animation: pulse 1.5s infinite;
+    }
+    .match-status-badge.finished {
+      background: var(--team-c);
+      color: #fff;
+      font-weight: bold;
+    }
+    .match-status-badge.final-badge {
+      background: var(--accent-gold);
+      color: #000;
+      font-weight: bold;
+    }
+
+    .score-arena {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin: 10px 0;
+    }
+
+    .team-score-side {
+      flex: 1;
+      min-width: 0;
+      text-align: center;
+      background: var(--inner-card-bg);
+      border-radius: 8px;
+      padding: 8px;
+      border: 1px solid var(--card-border);
+    }
+    .team-score-side h4 {
+      font-size: 0.92rem;
+      margin-bottom: 2px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .point-display {
+      font-size: 2.2rem;
+      font-weight: 900;
+      line-height: 1.1;
+      color: var(--text);
+      cursor: pointer;
+      padding: 2px;
+      border-radius: 4px;
+    }
+    .point-display:hover:not(.locked-score):not(.viewer-mode-score) { background: var(--btn-secondary); }
+    .point-display.locked-score, .point-display.viewer-mode-score { cursor: not-allowed; }
+
+    .vs-divider {
+      font-weight: bold;
+      color: var(--text-muted);
+      font-size: 0.85rem;
+      flex-shrink: 0;
+    }
+
+    .score-buttons {
+      display: flex;
+      gap: 4px;
+      margin-top: 6px;
+    }
+
+    .btn-score-adjust {
+      background: var(--btn-secondary);
+      border: 1px solid var(--card-border);
+      color: var(--text);
+      padding: 4px;
+      border-radius: 6px;
+      font-size: 0.8rem;
+      font-weight: bold;
+      min-height: 32px;
+    }
+    .btn-score-adjust:hover:not(:disabled) {
+      background: var(--btn-secondary-hover);
+      border-color: var(--accent-gold);
+    }
+    .btn-score-adjust:disabled { opacity: 0.35; cursor: not-allowed; }
+
+    .keypad-trigger-btn {
+      background: var(--btn-secondary);
+      font-size: 0.8rem;
+      font-weight: bold;
+      color: var(--accent-gold);
+      border: 1px solid var(--accent-gold);
+      margin-top: 8px;
+      min-height: 34px;
+    }
+    .keypad-trigger-btn:disabled {
+      opacity: 0.35;
+      cursor: not-allowed;
+      border-color: var(--card-border);
+      color: var(--text-muted);
+    }
+
+    .winner-banner {
+      background: rgba(16, 185, 129, 0.15);
+      border: 1px solid var(--team-c);
+      color: var(--team-c);
+      padding: 6px;
+      text-align: center;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      font-weight: bold;
+      margin-top: 8px;
+    }
+
+    .championship-banner {
+      background: rgba(245, 158, 11, 0.15);
+      border: 2px solid var(--accent-gold);
+      color: var(--accent-gold);
+      padding: 8px;
+      text-align: center;
+      border-radius: 6px;
+      font-size: 0.95rem;
+      font-weight: 800;
+      margin-top: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    /* LIVE VIDEO PLAYER SECTION */
+    .video-control-bar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+      margin-bottom: 12px;
+      background: var(--inner-card-bg);
+      padding: 10px;
+      border-radius: 8px;
+      border: 1px solid var(--card-border);
+    }
+    .video-control-bar input {
+      flex: 1 1 200px;
+      min-width: 0;
+    }
+    .video-wrapper {
+      position: relative;
+      width: 100%;
+      padding-bottom: 56.25%;
+      height: 0;
+      border-radius: 10px;
+      overflow: hidden;
+      background: #000;
+      border: 1px solid var(--card-border);
+    }
+    .video-wrapper iframe {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      border: 0;
+    }
+
+    /* NUMPAD MODAL */
+    .numpad-modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.75);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1050;
+      opacity: 0;
+      pointer-events: none;
+      transition: 0.2s opacity;
+      padding: 12px;
+    }
+    .numpad-modal.open { opacity: 1; pointer-events: auto; }
+    .numpad-container {
+      background: var(--card-bg);
+      border: 2px solid var(--accent-gold);
+      border-radius: 14px;
+      padding: 16px;
+      width: 300px;
+      max-width: 100%;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+    }
+    .numpad-title {
+      text-align: center;
+      font-size: 0.9rem;
+      margin-bottom: 8px;
+      color: var(--accent-gold);
+      font-weight: 600;
+    }
+    .numpad-screen {
+      background: var(--inner-card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 8px;
+      font-size: 2rem;
+      text-align: center;
+      font-weight: bold;
+      padding: 6px;
+      margin-bottom: 10px;
+      color: var(--text);
+    }
+    .numpad-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 6px;
+    }
+    .numpad-btn {
+      background: var(--numpad-bg);
+      border: 1px solid var(--card-border);
+      color: var(--text);
+      font-size: 1.2rem;
+      padding: 10px;
+      border-radius: 6px;
+      font-weight: bold;
+      min-height: 44px;
+    }
+    .numpad-btn:hover { background: var(--btn-secondary); }
+    .numpad-btn.action-btn { background: var(--btn-secondary); font-size: 0.95rem; }
+    .numpad-btn.save-btn {
+      background: var(--accent-gold);
+      color: #0f172a;
+      font-weight: bold;
+      grid-column: span 3;
+      margin-top: 4px;
+    }
+
+    /* PASSNUMBER PIN VERIFICATION MODAL */
+    .pin-modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.85);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 2000;
+      opacity: 0;
+      pointer-events: none;
+      transition: 0.25s opacity;
+      padding: 16px;
+      backdrop-filter: blur(5px);
+    }
+    .pin-modal.open { opacity: 1; pointer-events: auto; }
+    .pin-container {
+      background: var(--card-bg);
+      border: 2px solid var(--accent-gold);
+      border-radius: 16px;
+      padding: 24px 20px;
+      width: 320px;
+      max-width: 95%;
+      box-shadow: 0 10px 35px rgba(245, 158, 11, 0.25);
+      text-align: center;
+    }
+    .pin-lock-icon {
+      font-size: 2.5rem;
+      margin-bottom: 8px;
+    }
+    .pin-container h3 {
+      color: var(--accent-gold);
+      font-size: 1.15rem;
+      margin-bottom: 4px;
+    }
+    .pin-container p {
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      margin-bottom: 14px;
+    }
+    .pin-input {
+      font-size: 1.8rem;
+      letter-spacing: 6px;
+      text-align: center;
+      padding: 10px;
+      border-radius: 8px;
+      font-weight: 800;
+      border: 2px solid var(--card-border);
+      background: var(--inner-card-bg);
+      color: var(--accent-gold);
+      width: 100%;
+      margin-bottom: 8px;
+    }
+    .pin-input:focus {
+      border-color: var(--accent-gold);
+    }
+    .pin-error {
+      color: #ef4444;
+      font-size: 0.78rem;
+      font-weight: bold;
+      min-height: 18px;
+      margin-bottom: 12px;
+      display: none;
+    }
+    .pin-buttons {
+      display: flex;
+      gap: 8px;
+    }
+    .pin-buttons button {
+      flex: 1;
+      font-weight: bold;
+    }
+    .btn-pin-submit {
+      background: var(--accent-gold);
+      color: #0f172a;
+      border: none;
+    }
+    .btn-pin-cancel {
+      background: var(--btn-secondary);
+      color: var(--text);
+      border: 1px solid var(--card-border);
+    }
+
+    /* GATEWAY ROLE SELECTION MODAL */
+    .role-gate-modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(9, 13, 22, 0.95);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 99999;
+      padding: 16px;
+    }
+    .role-gate-modal.active {
+      display: flex !important;
+    }
+    .role-gate-card {
+      background: var(--card-bg);
+      border: 2px solid var(--accent-gold);
+      border-radius: 18px;
+      padding: 26px 20px;
+      width: 380px;
+      max-width: 95%;
+      text-align: center;
+      box-shadow: 0 15px 45px rgba(0, 0, 0, 0.75);
+      position: relative;
+    }
+    .role-gate-title {
+      font-size: 1.35rem;
+      color: var(--accent-gold);
+      margin-bottom: 6px;
+      font-weight: 800;
+      text-transform: uppercase;
+    }
+    .role-gate-sub {
+      color: var(--text-muted);
+      font-size: 0.85rem;
+      margin-bottom: 20px;
+    }
+    .role-choice-group {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+    .role-btn {
+      padding: 14px;
+      border-radius: 10px;
+      border: none;
+      font-size: 1rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .role-btn-viewer {
+      background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+      color: #fff;
+    }
+    .role-btn-viewer:hover {
+      filter: brightness(1.1);
+      transform: translateY(-2px);
+    }
+    .role-btn-admin {
+      background: linear-gradient(135deg, #f59e0b, #d97706);
+      color: #0f172a;
+    }
+    .role-btn-admin:hover {
+      filter: brightness(1.1);
+      transform: translateY(-2px);
+    }
+    .admin-pass-box {
+      margin-top: 14px;
+      border-top: 1px dashed var(--card-border);
+      padding-top: 14px;
+      display: none;
+    }
+
+    /* SIDEBAR */
+    .sidebar-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.6);
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.3s, visibility 0.3s;
+      z-index: 1100;
+    }
+    .sidebar-overlay.active { opacity: 1; visibility: visible; }
+    .sidebar {
+      position: fixed;
+      top: 0;
+      right: -440px;
+      width: 380px;
+      max-width: 88vw;
+      height: 100vh;
+      background: var(--sidebar-bg);
+      border-left: 1px solid var(--card-border);
+      box-shadow: -10px 0 30px rgba(0, 0, 0, 0.3);
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      z-index: 1110;
+      transition: right 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      overflow-y: auto;
+    }
+    .sidebar.open { right: 0; }
+    .sidebar-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-bottom: 10px;
+      border-bottom: 1px solid var(--card-border);
+      margin-bottom: 14px;
+    }
+    .sidebar-header h2 {
+      border: none;
+      margin-bottom: 0;
+      padding: 0;
+      font-size: 1.15rem;
+      color: var(--accent-gold);
+    }
+    .sidebar-close-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      font-size: 1.4rem;
+      width: auto;
+      padding: 0 4px;
+      min-height: auto;
+    }
+    .sidebar-actions {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+    .btn-action {
+      font-weight: 700;
+      gap: 8px;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      min-height: 38px;
+    }
+    .btn-matches-nav { background: linear-gradient(135deg, #3b82f6, #1d4ed8); color: white; }
+    .btn-saved-nav { background: linear-gradient(135deg, #8b5cf6, #6d28d9); color: white; }
+    .btn-saveas { background: linear-gradient(135deg, #0284c7, #0369a1); color: white; }
+    .btn-loadfile { background: linear-gradient(135deg, #059669, #047857); color: white; }
+    .btn-pdf { background: linear-gradient(135deg, #dc2626, #b91c1c); color: white; }
+    .btn-save { background: linear-gradient(135deg, #10b981, #059669); color: white; }
+    .btn-copy { background: var(--btn-secondary); color: var(--text); }
+    .btn-reset { background: transparent; border: 1px dashed #ef4444; color: #ef4444; margin-top: 4px; }
+
+    .sidebar-preview-title {
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 6px;
+    }
+
+    .sidebar-roster-preview {
+      flex: 1;
+      min-height: 140px;
+      overflow-y: auto;
+      background: var(--sub-bg);
+      border-radius: 8px;
+      padding: 10px;
+      border: 1px solid var(--card-border);
+      font-size: 0.82rem;
+    }
+
+    .preview-team-block { margin-bottom: 10px; }
+    .preview-team-title { font-weight: bold; padding-bottom: 4px; margin-bottom: 4px; border-bottom: 1px solid var(--card-border); }
+    .preview-player-row { display: flex; justify-content: space-between; padding: 3px 0; color: var(--text-muted); }
+
+    /* SAVE AS MODAL */
+    .saveas-modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.7);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1050;
+      opacity: 0;
+      pointer-events: none;
+      transition: 0.2s opacity;
+      padding: 12px;
+    }
+    .saveas-modal.open { opacity: 1; pointer-events: auto; }
+    .saveas-container {
+      background: var(--card-bg);
+      border: 2px solid var(--accent-gold);
+      border-radius: 14px;
+      padding: 16px;
+      width: 320px;
+      max-width: 100%;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+    }
+    .saveas-container h3 { color: var(--accent-gold); font-size: 1.05rem; margin-bottom: 6px; }
+    .saveas-container p { font-size: 0.82rem; color: var(--text-muted); margin-bottom: 10px; }
+    .saveas-buttons { display: flex; gap: 6px; margin-top: 12px; }
+    .btn-confirm-save { background: var(--accent-gold); color: #0f172a; font-weight: bold; }
+    .btn-cancel-save { background: var(--btn-secondary); color: var(--text); }
+
+    /* SAVED ARCHIVES VIEWER - RESPONSIVE CONTAINER OVERFLOW FIXES */
+    .saved-files-layout {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      max-width: 1440px;
+      margin: 0 auto;
+      width: 100%;
+      min-width: 0;
+    }
+    @media (min-width: 900px) {
+      .saved-files-layout {
+        display: grid;
+        grid-template-columns: 280px 1fr;
+        gap: 14px;
+      }
+    }
+
+    .saved-list-container {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      max-height: 550px;
+      overflow-y: auto;
+      width: 100%;
+      min-width: 0;
+    }
+
+    .saved-file-card {
+      background: var(--inner-card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 8px;
+      padding: 8px 10px;
+      cursor: pointer;
+      transition: all 0.2s;
+      width: 100%;
+      min-width: 0;
+    }
+    .saved-file-card:hover {
+      border-color: var(--accent-gold);
+      transform: translateX(2px);
+    }
+    .saved-file-card.active-card {
+      border: 2px solid var(--accent-gold);
+      background: var(--card-bg);
+      box-shadow: 0 0 15px rgba(245, 158, 11, 0.2);
+    }
+
+    .saved-file-title {
+      font-weight: bold;
+      font-size: 0.88rem;
+      color: var(--accent-gold);
+      margin-bottom: 3px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 6px;
+      min-width: 0;
+    }
+    .saved-file-title span:first-child {
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      min-width: 0;
+      flex: 1;
+    }
+    .saved-file-date { font-size: 0.72rem; color: var(--text-muted); margin-bottom: 3px; }
+    .saved-file-badge {
+      display: inline-block;
+      font-size: 0.68rem;
+      padding: 2px 5px;
+      border-radius: 4px;
+      background: rgba(16, 185, 129, 0.15);
+      color: var(--team-c);
+      font-weight: 700;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+    .saved-content-header {
+      background: linear-gradient(135deg, rgba(245, 158, 11, 0.1), rgba(16, 185, 129, 0.05));
+      border: 1px solid var(--card-border);
+      border-radius: 8px;
+      padding: 10px;
+      margin-bottom: 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+      width: 100%;
+      min-width: 0;
+    }
+    .saved-content-header h2 {
+      border: none;
+      margin: 0;
+      padding: 0;
+      color: var(--accent-gold);
+      font-size: 1.05rem;
+      word-break: break-word;
+    }
+
+    .saved-section-title {
+      font-size: 0.98rem;
+      color: var(--accent-gold);
+      margin-bottom: 10px;
+      padding-bottom: 4px;
+      border-bottom: 1px dashed var(--card-border);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-weight: 700;
+      width: 100%;
+      min-width: 0;
+    }
+
+    /* Fixed Saved Teams Grid to prevent right-edge clipping on mobile */
+    .saved-teams-grid {
+      display: grid;
+      grid-template-columns: 100%;
+      gap: 8px;
+      margin-bottom: 14px;
+      width: 100%;
+      min-width: 0;
+    }
+    @media (min-width: 600px) {
+      .saved-teams-grid {
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 10px;
+      }
+    }
+    .saved-team-box {
+      background: var(--inner-card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 8px;
+      padding: 8px 10px;
+      width: 100%;
+      min-width: 0;
+    }
+    .saved-team-box h4 {
+      font-size: 0.88rem;
+      margin-bottom: 4px;
+      padding-bottom: 3px;
+      border-bottom: 1px solid var(--card-border);
+      display: flex;
+      justify-content: space-between;
+      min-width: 0;
+    }
+    .saved-roster-list { list-style: none; font-size: 0.8rem; width: 100%; }
+    .saved-roster-list li {
+      padding: 3px 0;
+      display: flex;
+      justify-content: space-between;
+      border-bottom: 1px dashed rgba(148, 163, 184, 0.15);
+      gap: 6px;
+    }
+    .saved-roster-list li span:first-child {
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      min-width: 0;
+      flex: 1;
+    }
+
+    /* MEMORIES */
+    .memories-upload-bar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      align-items: center;
+      background: var(--inner-card-bg);
+      padding: 10px;
+      border-radius: 8px;
+      border: 1px solid var(--card-border);
+      margin-bottom: 12px;
+      width: 100%;
+      min-width: 0;
+    }
+    .memories-upload-bar input[type="text"] {
+      flex: 1 1 140px;
+      min-width: 0;
+    }
+    .btn-upload-photo {
+      width: auto;
+      background: linear-gradient(135deg, #10b981, #059669);
+      color: white;
+      font-weight: bold;
+      padding: 6px 12px;
+      font-size: 0.8rem;
+    }
+
+    .gallery-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+      gap: 10px;
+      margin-top: 10px;
+      width: 100%;
+      min-width: 0;
+    }
+    .gallery-item {
+      position: relative;
+      background: var(--inner-card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 6px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    }
+    .gallery-img {
+      width: 100%;
+      height: 120px;
+      object-fit: cover;
+      cursor: pointer;
+    }
+    .gallery-meta {
+      padding: 4px 6px;
+      font-size: 0.72rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: var(--card-bg);
+    }
+    .gallery-caption {
+      font-weight: 600;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 90px;
+      color: var(--text);
+    }
+    .btn-delete-photo {
+      background: transparent;
+      border: none;
+      color: #ef4444;
+      font-size: 0.85rem;
+      width: auto;
+      padding: 0 2px;
+      min-height: auto;
+    }
+
+    .lightbox-modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.92);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1200;
+      opacity: 0;
+      pointer-events: none;
+      transition: 0.25s opacity;
+      padding: 12px;
+    }
+    .lightbox-modal.open { opacity: 1; pointer-events: auto; }
+    .lightbox-container {
+      max-width: 750px;
+      max-height: 90vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      position: relative;
+      width: 100%;
+    }
+    .lightbox-img {
+      max-width: 100%;
+      max-height: 75vh;
+      border-radius: 6px;
+      border: 2px solid var(--accent-gold);
+    }
+    .lightbox-caption {
+      margin-top: 8px;
+      color: #fff;
+      font-size: 0.95rem;
+      font-weight: 600;
+      text-align: center;
+    }
+    .lightbox-close {
+      position: absolute;
+      top: -32px;
+      right: 0;
+      background: transparent;
+      border: none;
+      color: #fff;
+      font-size: 1.6rem;
+      width: auto;
+      min-height: auto;
+    }
+
+    /* VIEWER RESTRICTIONS */
+    body.role-viewer .admin-only {
+      display: none !important;
+    }
+    body.role-viewer .mystery-card {
+      cursor: not-allowed !important;
+    }
+    body.role-viewer .mystery-card:hover {
+      transform: none !important;
+    }
+
+    @media print {
+      body * { visibility: hidden; }
+      #printArea, #printArea * { visibility: visible; }
+      #printArea {
+        position: absolute; left: 0; top: 0; width: 100%;
+        background: #ffffff !important; color: #000000 !important; padding: 20px;
+      }
+      .print-header { text-align: center; margin-bottom: 20px; border-bottom: 2px solid #000; padding-bottom: 10px; }
+      .print-grid { display: flex; justify-content: space-between; gap: 16px; }
+      .print-col { flex: 1; border: 1px solid #999; border-radius: 6px; padding: 10px; }
+      .print-col table { width: 100%; border-collapse: collapse; }
+      .print-col th, .print-col td { border-bottom: 1px solid #ddd; padding: 6px 4px; text-align: left; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- VIEW 1: DRAFT & LANDING PAGE -->
+  <div id="draftViewPage" class="view-page active-view">
+    <header>
+      <h1>Natungram Volleyball Weekly Tournament</h1>
+      <p>Dynamic User-Defined Teams & Auto-Synced Round-Robin Matches</p>
+      <div class="status-badge-row">
+        <span class="live-status-pill" id="cloudSyncStatus">
+          <span class="pulse-dot"></span> Live Cloud Sync Active
+        </span>
+        <span class="role-status-pill viewer-pill" id="userRoleBadge" onclick="openRoleGateModal()" title="Tap to switch mode">
+          👀 Viewer (Read-Only)
+        </span>
+      </div>
+      <div class="header-actions">
+        <button class="nav-saved-btn" id="navSavedFilesBtn">
+          <span>📁</span> Saved Files
+        </button>
+        <button class="theme-toggle-btn" id="themeToggleBtn">
+          <span id="themeIcon">☀️</span> <span id="themeLabel">Light Mode</span>
+        </button>
+        <button class="top-bar-btn" id="openSidebarBtn">
+          <span>📂</span> Menu & Matches
+        </button>
+      </div>
+    </header>
+
+    <div class="main-grid">
+      <!-- LEFT PANEL: POTS & PLAYERS -->
+      <div class="card">
+        <h2>1. Pot / Role</h2>
+        <div class="pot-select-group">
+          <label for="potSelect">Active Category</label>
+          <select id="potSelect">
+            <option value="Settler">1. Settler</option>
+            <option value="Defender Center">2. Defender Center</option>
+            <option value="Defender Service">3. Defender Service</option>
+            <option value="Attacker">4. Attacker</option>
+            <option value="Semi Attacker">5. Semi Attacker</option>
+          </select>
+        </div>
+
+        <div class="add-player-box admin-only">
+          <input type="text" id="newPlayerInput" placeholder="Add extra player..." />
+          <button class="btn-add" id="addPlayerBtn">Add</button>
+        </div>
+
+        <div class="player-list" id="playerListContainer"></div>
+      </div>
+
+      <!-- CENTER PANEL: 3D MYSTERY BOXES -->
+      <div class="card">
+        <h2>2. Mystery Pick Arena</h2>
+        <div class="mystery-stage">
+          <div class="turn-status" id="turnIndicator">Up Next: Drafting for Team A</div>
+          <div class="stage-sub" id="stageInstruction">Tap any mystery box to crack it open & reveal the player</div>
+
+          <div class="box-grid" id="boxGrid"></div>
+
+          <button class="shuffle-btn admin-only" id="btnShuffle" onclick="shuffleBoxes()">🔀 Shuffle Boxes</button>
+        </div>
+      </div>
+
+      <!-- RIGHT PANEL: DYNAMIC TEAMS -->
+      <div class="card">
+        <h2>3. Manage Teams</h2>
+        <div class="team-controls-box admin-only">
+          <input type="text" id="newTeamInput" placeholder="Add new team name..." />
+          <button class="btn-add" id="addTeamBtn">Add</button>
+        </div>
+        <div class="teams-container" id="teamsContainer"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- VIEW 2: MATCHES, FIXTURES & SCORECARD PAGE -->
+  <div id="matchesViewPage" class="view-page">
+    <div class="tournament-container">
+      <div class="view-nav-bar">
+        <button class="btn-back" id="backToDraftBtn">← Back to Draft</button>
+        <h2 style="border:none; margin:0; color:var(--accent-gold); font-size:1.1rem;">Tournament Portal</h2>
+        <div style="display:flex; gap:6px; align-items:center; flex-wrap:wrap;">
+          <span class="role-status-pill viewer-pill" id="userRoleBadge2" onclick="openRoleGateModal()" style="padding:4px 10px; font-size:0.75rem;" title="Tap to switch mode">
+            👀 Viewer
+          </span>
+          <button class="nav-saved-btn" id="navSavedFilesBtn2">
+            <span>📁</span> Saved Files
+          </button>
+          <button class="theme-toggle-btn" id="themeToggleBtn2">
+            <span class="themeIconShared">☀️</span>
+          </button>
+          <button class="top-bar-btn" id="openSidebarBtn2">
+            <span>📂</span> Menu
+          </button>
+        </div>
+      </div>
+
+      <!-- POINTS TABLE -->
+      <div class="card">
+        <h2>📊 Points Table</h2>
+        <div class="table-container">
+          <table class="points-table">
+            <thead>
+              <tr>
+                <th style="text-align:left;">Rank & Team</th>
+                <th>Played (P)</th>
+                <th>Won (W)</th>
+                <th>Lost (L)</th>
+                <th>Points For (PF)</th>
+                <th>Points Against (PA)</th>
+                <th>Diff</th>
+                <th>Points (PTS)</th>
+              </tr>
+            </thead>
+            <tbody id="pointsTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- LIVE VIDEO MATCH UPDATE SECTION -->
+      <div class="card">
+        <h2 id="videoSectionHeading">🔴 Live Match Broadcast</h2>
+        
+        <div class="video-control-bar admin-only">
+          <span style="font-size:0.85rem; font-weight:bold; color:var(--accent-gold);">Stream URL:</span>
+          <input type="text" id="streamUrlInput" placeholder="Enter YouTube URL or Video ID (e.g., https://youtu.be/xyz or xyz)" />
+          <button class="btn-add btn-fixture-action" id="btnUpdateStream" style="background:var(--accent-gold); color:#000;">Set Video</button>
+          <button class="btn-fixture-action" id="btnToggleStreamStatus" style="background:var(--btn-secondary); border:1px solid var(--card-border);">Toggle Status</button>
+        </div>
+
+        <div class="video-wrapper">
+          <iframe id="liveVideoFrame" src="https://www.youtube.com/embed/live_stream?channel=YOUR_CHANNEL_ID&autoplay=0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+        </div>
+      </div>
+
+      <!-- FIXTURES & SCORECARD -->
+      <div class="card">
+        <h2>🏐 Tournament Fixtures & Live Scorecard</h2>
+
+        <div class="fixture-controls-bar admin-only">
+          <span style="font-size:0.85rem; font-weight:bold; color:var(--accent-gold);">Custom Match:</span>
+          <select id="matchTeamSelect1"></select>
+          <span style="color:var(--text-muted); font-size:0.85rem; font-weight:bold;">VS</span>
+          <select id="matchTeamSelect2"></select>
+          <button class="btn-add btn-fixture-action" id="btnAddManualMatch">➕ Add Match</button>
+          <button class="btn-fixture-action" style="background:var(--btn-secondary); border:1px solid var(--card-border);" id="btnRegenerateRR">🔄 Reset Auto Round-Robin</button>
+        </div>
+
+        <p style="font-size: 0.82rem; color: var(--text-muted); margin-bottom: 10px;">
+          *Match status becomes <strong>FINISHED</strong> and declares winner <strong>ONLY when the match is Locked (🔒)</strong>. Use <strong>✅ Table: ON/OFF</strong> on any match to decide if it impacts Points Table rankings.
+        </p>
+
+        <div class="matches-grid" id="fixturesContainer"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- VIEW 3: SAVED FILES ARCHIVE & VIEWER -->
+  <div id="savedFilesViewPage" class="view-page">
+    <div class="tournament-container">
+      <div class="view-nav-bar">
+        <button class="btn-back" id="backFromSavedBtn">← Back to Tournament</button>
+        <h2 style="border:none; margin:0; color:var(--accent-gold); font-size:1.1rem;">📁 Saved Tournament Archives</h2>
+        <button class="top-bar-btn" id="openSidebarBtn3">
+          <span>📂</span> Menu
+        </button>
+      </div>
+
+      <div class="saved-files-layout">
+        <!-- LEFT: SAVED TOURNAMENTS LIST -->
+        <div class="card" style="height: fit-content;">
+          <h2>
+            <span>Saved Archives</span>
+            <button class="btn-add admin-only" id="btnQuickArchiveCurrent" style="width:auto; padding:4px 8px; font-size:0.75rem; background:var(--accent-gold); color:#000;">+ Archive Now</button>
+          </h2>
+          <div class="saved-list-container" id="savedFilesListContainer"></div>
+        </div>
+
+        <!-- RIGHT: SELECTED SAVED FILE CONTENT -->
+        <div id="savedFileDetailContainer" style="display:none; width: 100%; min-width: 0;">
+          <div class="saved-content-header">
+            <div style="min-width: 0; flex: 1;">
+              <h2 id="viewFileName">Tournament Name</h2>
+              <div style="color:var(--text-muted); font-size:0.8rem;" id="viewFileDate">Archived on: Date</div>
+            </div>
+            <div id="viewFileChampionBadge" class="championship-banner" style="margin:0; padding:6px 12px; font-size:0.88rem;">
+              👑 Champion: Deciding...
+            </div>
+            <div style="display:flex; gap:6px; flex-wrap: wrap;" class="admin-only">
+              <button class="btn-fixture-action" id="btnRestoreSavedTournament" style="background:var(--accent-gold); color:#000; border-radius:6px; font-size:0.78rem;">↺ Restore to Live</button>
+              <button class="btn-remove-pot" id="btnDeleteSavedTournament" style="font-size:0.78rem; padding:6px 8px;">🗑️ Delete</button>
+            </div>
+          </div>
+
+          <!-- SECTION 1: TEAM PLAYERS -->
+          <div class="card">
+            <div class="saved-section-title"><span>👥</span> 1. Team Players & Rosters</div>
+            <div class="saved-teams-grid" id="viewTeamsContainer"></div>
+          </div>
+
+          <!-- SECTION 2: MATCHES SUMMARY -->
+          <div class="card">
+            <div class="saved-section-title"><span>🏐</span> 2. Matches Summary & Results</div>
+            <div class="matches-grid" id="viewMatchesContainer"></div>
+          </div>
+
+          <!-- SECTION 3: POINTS TABLE -->
+          <div class="card">
+            <div class="saved-section-title"><span>📊</span> 3. Final Points Table</div>
+            <div class="table-container">
+              <table class="points-table">
+                <thead>
+                  <tr>
+                    <th style="text-align:left;">Rank & Team</th>
+                    <th>Played</th>
+                    <th>Won</th>
+                    <th>Lost</th>
+                    <th>Points For</th>
+                    <th>Points Against</th>
+                    <th>Diff</th>
+                    <th>Points</th>
+                  </tr>
+                </thead>
+                <tbody id="viewPointsTableBody"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- SECTION 4: MEMORIES & WINNING TEAM PHOTOS -->
+          <div class="card">
+            <div class="saved-section-title"><span>📸</span> 4. Memories & Winning Team Photos</div>
+            <div class="memories-upload-bar admin-only">
+              <input type="file" id="memoryPhotoInput" accept="image/*" style="display:none;" />
+              <button class="btn-upload-photo" id="btnChoosePhoto">📷 Select Winning Team Photo</button>
+              <input type="text" id="memoryCaptionInput" placeholder="Photo caption (e.g., Trophy Celebration)..." />
+              <button class="btn-add btn-fixture-action" id="btnSavePhoto" style="background:var(--accent-gold); color:#000;">Upload & Save</button>
+            </div>
+            <div class="gallery-grid" id="viewMemoriesGrid"></div>
+          </div>
+        </div>
+
+        <!-- EMPTY PLACEHOLDER -->
+        <div class="card" id="savedFileEmptyPlaceholder" style="text-align:center; padding:30px 12px; width: 100%;">
+          <div style="font-size:2.5rem; margin-bottom:8px;">📁</div>
+          <h3 style="color:var(--accent-gold); margin-bottom:6px;">No Saved File Selected</h3>
+          <p style="color:var(--text-muted); font-size:0.85rem; max-width:360px; margin:0 auto 12px;">
+            Select a saved file from the left to inspect rosters, scores and tournament photos.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- INITIAL GATEWAY / ROLE SELECTION MODAL -->
+  <div class="role-gate-modal active" id="roleGateModal">
+    <div class="role-gate-card">
+      <div style="font-size:2.5rem; margin-bottom: 8px;">🏐</div>
+      <h2 class="role-gate-title">Welcome Tournament</h2>
+      <p class="role-gate-sub">Choose how you want to join the tournament</p>
+
+      <div class="role-choice-group">
+        <button type="button" class="role-btn role-btn-viewer" id="btnJoinViewer">
+          <span>👀</span> Join as Viewer (Free Access)
+        </button>
+        <button type="button" class="role-btn role-btn-admin" id="btnJoinAdmin">
+          <span>🔑</span> Join as Admin (Passcode Required)
+        </button>
+      </div>
+
+      <!-- ADMIN PASSCODE INPUT BOX -->
+      <div class="admin-pass-box" id="adminPassBox">
+        <p style="font-size:0.82rem; color:var(--accent-gold); margin-bottom:8px; font-weight:bold;">Enter Admin Passcode</p>
+        <input type="password" id="adminGateInput" class="pin-input" maxlength="10" placeholder="•••••" autocomplete="off" />
+        <div class="pin-error" id="adminGateError">Invalid Admin Passcode!</div>
+        <div style="display:flex; gap:6px; margin-top:8px;">
+          <button type="button" class="btn-pin-cancel" id="btnCancelAdminGate">Back</button>
+          <button type="button" class="btn-pin-submit" id="btnSubmitAdminGate">Enter as Admin</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- LIGHTBOX PHOTO MODAL -->
+  <div class="lightbox-modal" id="lightboxModal">
+    <div class="lightbox-container">
+      <button class="lightbox-close" id="lightboxCloseBtn">&times;</button>
+      <img src="" alt="Tournament Memory" class="lightbox-img" id="lightboxImg" />
+      <div class="lightbox-caption" id="lightboxCaption">Caption here</div>
+    </div>
+  </div>
+
+  <!-- NUMPAD MODAL -->
+  <div class="numpad-modal" id="numpadModal">
+    <div class="numpad-container">
+      <div class="numpad-title" id="numpadTargetTitle">Edit Team Score</div>
+      <div class="numpad-screen" id="numpadDisplay">0</div>
+      <div class="numpad-grid">
+        <button class="numpad-btn" onclick="pressKey(1)">1</button>
+        <button class="numpad-btn" onclick="pressKey(2)">2</button>
+        <button class="numpad-btn" onclick="pressKey(3)">3</button>
+        <button class="numpad-btn" onclick="pressKey(4)">4</button>
+        <button class="numpad-btn" onclick="pressKey(5)">5</button>
+        <button class="numpad-btn" onclick="pressKey(6)">6</button>
+        <button class="numpad-btn" onclick="pressKey(7)">7</button>
+        <button class="numpad-btn" onclick="pressKey(8)">8</button>
+        <button class="numpad-btn" onclick="pressKey(9)">9</button>
+        <button class="numpad-btn action-btn" onclick="clearKeypad()">C</button>
+        <button class="numpad-btn" onclick="pressKey(0)">0</button>
+        <button class="numpad-btn action-btn" onclick="backspaceKeypad()">⌫</button>
+        <button class="numpad-btn save-btn" onclick="saveKeypadScore()">Confirm Score</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- PASSNUMBER PIN VERIFICATION MODAL -->
+  <div class="pin-modal" id="pinModal">
+    <div class="pin-container">
+      <div class="pin-lock-icon">🔒</div>
+      <h3>Passcode Required</h3>
+      <p>Enter Admin passcode to continue</p>
+      <input type="password" id="pinInput" class="pin-input" maxlength="10" placeholder="•••••" autocomplete="off" />
+      <div class="pin-error" id="pinError">Incorrect passcode!</div>
+      <div class="pin-buttons">
+        <button class="btn-pin-cancel" id="btnCancelPin">Cancel</button>
+        <button class="btn-pin-submit" id="btnSubmitPin">Verify 🔑</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- SAVE AS MODAL -->
+  <div class="saveas-modal" id="saveasModal">
+    <div class="saveas-container">
+      <h3>💾 Save Tournament As...</h3>
+      <p>Give your tournament state file a custom name to save to archives and download.</p>
+      <label for="saveAsFileName">File Name</label>
+      <input type="text" id="saveAsFileName" value="natungram-volleyball-data" placeholder="tournament-name" />
+      <div class="saveas-buttons">
+        <button class="btn-cancel-save" id="btnCancelSaveAs">Cancel</button>
+        <button class="btn-confirm-save" id="btnConfirmSaveAs">Export & Archive</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- HIDDEN FILE INPUT FOR IMPORT -->
+  <input type="file" id="fileUploadInput" accept=".json,application/json" style="display:none;" />
+
+  <!-- SIDEBAR -->
+  <div class="sidebar-overlay" id="sidebarOverlay"></div>
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <h2>Tournament Menu</h2>
+      <button class="sidebar-close-btn" id="closeSidebarBtn">&times;</button>
+    </div>
+
+    <div class="sidebar-actions">
+      <!-- Public / Common Options -->
+      <button class="btn-action btn-matches-nav" id="sidebarMatchesBtn">
+        🏐 Matches & Tournament Page
+      </button>
+      <button class="btn-action btn-saved-nav" id="sidebarSavedBtn">
+        📁 Saved Files & Memories
+      </button>
+      <button class="btn-action btn-copy" id="copyRosterBtn">
+        📋 Copy Summary
+      </button>
+
+      <!-- Mode Switch Option -->
+      <button class="btn-action" style="background:var(--btn-secondary); color:var(--accent-gold);" onclick="openRoleGateModal(); toggleSidebar(false);">
+        🔄 Switch Mode (Admin / Viewer)
+      </button>
+
+      <!-- Admin Only Operations -->
+      <button class="btn-action btn-saveas admin-only" id="saveAsBtn">
+        💾 Save As / Archive File
+      </button>
+      <button class="btn-action btn-loadfile admin-only" id="loadTournamentFileBtn">
+        📂 Load / Import Tournament Data
+      </button>
+      <button class="btn-action btn-pdf admin-only" id="downloadPdfBtn">
+        📄 Download PDF / Print
+      </button>
+      <button class="btn-action btn-save admin-only" id="saveDraftBtn">
+        📌 Force Cloud Sync
+      </button>
+      <button class="btn-action btn-reset admin-only" id="resetDraftBtn">
+        ⚠️ Reset Entire Tournament
+      </button>
+    </div>
+
+    <div class="sidebar-preview-title">Live Roster Summary</div>
+    <div class="sidebar-roster-preview" id="sidebarRosterPreview"></div>
+  </aside>
+
+  <!-- PICK RESULT MODAL -->
+  <div class="announcement" id="modal">
+    <div class="announcement-card">
+      <div class="card-reveal-icon">🎁</div>
+      <h4>Mystery Unveiled!</h4>
+      <div class="pick-name" id="modalPlayer">Player Name</div>
+      <div class="pick-dest" id="modalTeam">Drafted to Team</div>
+      <button id="modalCloseBtn">Continue Draft</button>
+    </div>
+  </div>
+
+  <div id="printArea" style="display: none;"></div>
+
+  <script>
+    /* =================================================================
+       1. GLOBAL APP STATE & DOM REFERENCES
+       ================================================================= */
+    const ADMIN_PASSCODE = "12345";
+    let currentUserRole = "viewer";
+
+    const pots = {
+      "Settler": ["Mitu", "Dhoni", "Piyush"],
+      "Defender Center": ["Kalyan", "Chapa", "Sayan"],
+      "Defender Service": ["Chayan", "Rony", "Ayush", "Subho", "Pappu", "Motu", "Pannu", "Kali", "Deep2"],
+      "Attacker": ["Somnath", "Atanu", "Subroto"],
+      "Semi Attacker": ["Madhav", "Deep1", "Ayan"]
+    };
+
+    let draftedPlayers = new Set();
+    let teamOrder = ["Team A", "Team B", "Team C"];
+    let teams = { "Team A": [], "Team B": [], "Team C": [] };
+    let currentTeamIndex = 0;
+    let matches = [];
+    let mysteryBoxItems = [];
+
+    let streamVideoId = "live_stream";
+    let isStreamLive = true;
+
+    const draftViewPage = document.getElementById("draftViewPage");
+    const matchesViewPage = document.getElementById("matchesViewPage");
+    const savedFilesViewPage = document.getElementById("savedFilesViewPage");
+
+    const potSelect = document.getElementById("potSelect");
+    const playerListContainer = document.getElementById("playerListContainer");
+    const newPlayerInput = document.getElementById("newPlayerInput");
+    const addPlayerBtn = document.getElementById("addPlayerBtn");
+    const turnIndicator = document.getElementById("turnIndicator");
+    const boxGrid = document.getElementById("boxGrid");
+    const modal = document.getElementById("modal");
+    const modalPlayer = document.getElementById("modalPlayer");
+    const modalTeam = document.getElementById("modalTeam");
+    const modalCloseBtn = document.getElementById("modalCloseBtn");
+
+    const teamsContainer = document.getElementById("teamsContainer");
+    const newTeamInput = document.getElementById("newTeamInput");
+    const addTeamBtn = document.getElementById("addTeamBtn");
+
+    const matchTeamSelect1 = document.getElementById("matchTeamSelect1");
+    const matchTeamSelect2 = document.getElementById("matchTeamSelect2");
+    const btnAddManualMatch = document.getElementById("btnAddManualMatch");
+    const btnRegenerateRR = document.getElementById("btnRegenerateRR");
+
+    const sidebar = document.getElementById("sidebar");
+    const sidebarOverlay = document.getElementById("sidebarOverlay");
+    const openSidebarBtn = document.getElementById("openSidebarBtn");
+    const openSidebarBtn2 = document.getElementById("openSidebarBtn2");
+    const openSidebarBtn3 = document.getElementById("openSidebarBtn3");
+    const closeSidebarBtn = document.getElementById("closeSidebarBtn");
+    const sidebarRosterPreview = document.getElementById("sidebarRosterPreview");
+    const sidebarMatchesBtn = document.getElementById("sidebarMatchesBtn");
+    const sidebarSavedBtn = document.getElementById("sidebarSavedBtn");
+    const backToDraftBtn = document.getElementById("backToDraftBtn");
+    const backFromSavedBtn = document.getElementById("backFromSavedBtn");
+    const navSavedFilesBtn = document.getElementById("navSavedFilesBtn");
+    const navSavedFilesBtn2 = document.getElementById("navSavedFilesBtn2");
+
+    const downloadPdfBtn = document.getElementById("downloadPdfBtn");
+    const saveDraftBtn = document.getElementById("saveDraftBtn");
+    const copyRosterBtn = document.getElementById("copyRosterBtn");
+    const resetDraftBtn = document.getElementById("resetDraftBtn");
+    const printArea = document.getElementById("printArea");
+
+    const streamUrlInput = document.getElementById("streamUrlInput");
+    const btnUpdateStream = document.getElementById("btnUpdateStream");
+    const btnToggleStreamStatus = document.getElementById("btnToggleStreamStatus");
+    const liveVideoFrame = document.getElementById("liveVideoFrame");
+    const videoSectionHeading = document.getElementById("videoSectionHeading");
+
+    const saveAsBtn = document.getElementById("saveAsBtn");
+    const saveasModal = document.getElementById("saveasModal");
+    const saveAsFileName = document.getElementById("saveAsFileName");
+    const btnCancelSaveAs = document.getElementById("btnCancelSaveAs");
+    const btnConfirmSaveAs = document.getElementById("btnConfirmSaveAs");
+    const loadTournamentFileBtn = document.getElementById("loadTournamentFileBtn");
+    const fileUploadInput = document.getElementById("fileUploadInput");
+
+    const savedFilesListContainer = document.getElementById("savedFilesListContainer");
+    const btnQuickArchiveCurrent = document.getElementById("btnQuickArchiveCurrent");
+    const savedFileDetailContainer = document.getElementById("savedFileDetailContainer");
+    const savedFileEmptyPlaceholder = document.getElementById("savedFileEmptyPlaceholder");
+    const viewFileName = document.getElementById("viewFileName");
+    const viewFileDate = document.getElementById("viewFileDate");
+    const viewFileChampionBadge = document.getElementById("viewFileChampionBadge");
+    const viewTeamsContainer = document.getElementById("viewTeamsContainer");
+    const viewMatchesContainer = document.getElementById("viewMatchesContainer");
+    const viewPointsTableBody = document.getElementById("viewPointsTableBody");
+    const viewMemoriesGrid = document.getElementById("viewMemoriesGrid");
+    const btnRestoreSavedTournament = document.getElementById("btnRestoreSavedTournament");
+    const btnDeleteSavedTournament = document.getElementById("btnDeleteSavedTournament");
+
+    const memoryPhotoInput = document.getElementById("memoryPhotoInput");
+    const btnChoosePhoto = document.getElementById("btnChoosePhoto");
+    const memoryCaptionInput = document.getElementById("memoryCaptionInput");
+    const btnSavePhoto = document.getElementById("btnSavePhoto");
+    let currentActiveSavedRecordId = null;
+    let selectedMemoryBase64 = null;
+
+    const lightboxModal = document.getElementById("lightboxModal");
+    const lightboxImg = document.getElementById("lightboxImg");
+    const lightboxCaption = document.getElementById("lightboxCaption");
+    const lightboxCloseBtn = document.getElementById("lightboxCloseBtn");
+
+    const themeToggleBtn = document.getElementById("themeToggleBtn");
+    const themeToggleBtn2 = document.getElementById("themeToggleBtn2");
+    const themeIcon = document.getElementById("themeIcon");
+    const themeLabel = document.getElementById("themeLabel");
+    const sharedThemeIcons = document.querySelectorAll(".themeIconShared");
+
+    const roleGateModal = document.getElementById("roleGateModal");
+    const btnJoinViewer = document.getElementById("btnJoinViewer");
+    const btnJoinAdmin = document.getElementById("btnJoinAdmin");
+    const adminPassBox = document.getElementById("adminPassBox");
+    const adminGateInput = document.getElementById("adminGateInput");
+    const adminGateError = document.getElementById("adminGateError");
+    const btnCancelAdminGate = document.getElementById("btnCancelAdminGate");
+    const btnSubmitAdminGate = document.getElementById("btnSubmitAdminGate");
+    const userRoleBadge = document.getElementById("userRoleBadge");
+    const userRoleBadge2 = document.getElementById("userRoleBadge2");
+    const stageInstruction = document.getElementById("stageInstruction");
+
+    /* =================================================================
+       2. ROLE MANAGEMENT (ADMIN vs VIEWER)
+       ================================================================= */
+    function openRoleGateModal() {
+      adminPassBox.style.display = "none";
+      adminGateInput.value = "";
+      adminGateError.style.display = "none";
+      roleGateModal.classList.add("active");
+    }
+
+    function closeRoleGateModal() {
+      roleGateModal.classList.remove("active");
+      adminPassBox.style.display = "none";
+    }
+
+    btnJoinViewer.addEventListener("click", (e) => {
+      e.stopPropagation();
+      setRole("viewer");
+      closeRoleGateModal();
+    });
+
+    btnJoinAdmin.addEventListener("click", (e) => {
+      e.stopPropagation();
+      adminPassBox.style.display = "block";
+      adminGateError.style.display = "none";
+      setTimeout(() => adminGateInput.focus(), 100);
+    });
+
+    btnCancelAdminGate.addEventListener("click", (e) => {
+      e.stopPropagation();
+      adminPassBox.style.display = "none";
+      adminGateInput.value = "";
+      adminGateError.style.display = "none";
+    });
+
+    btnSubmitAdminGate.addEventListener("click", (e) => {
+      e.stopPropagation();
+      verifyAdminGatePasscode();
+    });
+
+    adminGateInput.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        verifyAdminGatePasscode();
+      }
+    });
+
+    function verifyAdminGatePasscode() {
+      const entered = adminGateInput.value.trim();
+      if (entered === ADMIN_PASSCODE) {
+        playBeep(750, 0.08);
+        setRole("admin");
+        closeRoleGateModal();
+      } else {
+        adminGateError.style.display = "block";
+        adminGateError.textContent = "Incorrect Passcode!";
+        playBeep(220, 0.2);
+        adminGateInput.value = "";
+      }
+    }
+
+    function setRole(role) {
+      currentUserRole = role;
+      if (role === "admin") {
+        document.body.classList.remove("role-viewer");
+        document.body.classList.add("role-admin");
+        if (userRoleBadge) {
+          userRoleBadge.className = "role-status-pill admin-pill";
+          userRoleBadge.innerHTML = "👑 Admin (Full Access)";
+        }
+        if (userRoleBadge2) {
+          userRoleBadge2.className = "role-status-pill admin-pill";
+          userRoleBadge2.innerHTML = "👑 Admin";
+        }
+        if (stageInstruction) {
+          stageInstruction.innerText = "Tap any mystery box to crack it open & reveal the player";
+        }
+      } else {
+        document.body.classList.remove("role-admin");
+        document.body.classList.add("role-viewer");
+        if (userRoleBadge) {
+          userRoleBadge.className = "role-status-pill viewer-pill";
+          userRoleBadge.innerHTML = "👀 Viewer (Read-Only)";
+        }
+        if (userRoleBadge2) {
+          userRoleBadge2.className = "role-status-pill viewer-pill";
+          userRoleBadge2.innerHTML = "👀 Viewer";
+        }
+        if (stageInstruction) {
+          stageInstruction.innerText = "Viewing draft picks in real-time (Read-Only Mode)";
+        }
+      }
+      renderPlayerList();
+      renderTeamRosters();
+      renderMatches();
+      if (currentActiveSavedRecordId) {
+        displaySavedFileDetails(currentActiveSavedRecordId);
+      }
+    }
+
+    function requestPassnumber(onSuccess) {
+      if (currentUserRole === "admin") {
+        if (typeof onSuccess === "function") onSuccess();
+        return;
+      }
+      pendingPassCallback = onSuccess;
+      pinInput.value = "";
+      pinError.style.display = "none";
+      pinError.textContent = "";
+      pinModal.classList.add("open");
+      setTimeout(() => pinInput.focus(), 150);
+    }
+
+    let pendingPassCallback = null;
+    const pinModal = document.getElementById("pinModal");
+    const pinInput = document.getElementById("pinInput");
+    const pinError = document.getElementById("pinError");
+    const btnSubmitPin = document.getElementById("btnSubmitPin");
+    const btnCancelPin = document.getElementById("btnCancelPin");
+
+    function closePassModal() {
+      pinModal.classList.remove("open");
+      pinInput.value = "";
+      pendingPassCallback = null;
+    }
+
+    btnCancelPin.addEventListener("click", closePassModal);
+    pinModal.addEventListener("click", (e) => {
+      if (e.target === pinModal) closePassModal();
+    });
+
+    pinInput.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") submitPassnumber();
+    });
+
+    btnSubmitPin.addEventListener("click", submitPassnumber);
+
+    function submitPassnumber() {
+      const entered = pinInput.value.trim();
+      if (entered === ADMIN_PASSCODE) {
+        playBeep(750, 0.08);
+        const action = pendingPassCallback;
+        closePassModal();
+        setRole("admin");
+        if (typeof action === "function") {
+          action();
+        }
+      } else {
+        pinError.textContent = "Incorrect Passcode (Access Denied)";
+        pinError.style.display = "block";
+        pinInput.value = "";
+        playBeep(220, 0.2);
+      }
+    }
+
+    /* =================================================================
+       3. THEME ENGINE & AUDIO FEEDBACK
+       ================================================================= */
+    function applyTheme(isLight) {
+      if (isLight) {
+        document.body.classList.add("light-mode");
+        if (themeIcon) themeIcon.textContent = "🌙";
+        if (themeLabel) themeLabel.textContent = "Dark Mode";
+        sharedThemeIcons.forEach(el => el.textContent = "🌙");
+      } else {
+        document.body.classList.remove("light-mode");
+        if (themeIcon) themeIcon.textContent = "☀️";
+        if (themeLabel) themeLabel.textContent = "Light Mode";
+        sharedThemeIcons.forEach(el => el.textContent = "☀️");
+      }
+    }
+
+    function toggleTheme() {
+      const isLight = !document.body.classList.contains("light-mode");
+      applyTheme(isLight);
+      localStorage.setItem("vball_theme_mode", isLight ? "light" : "dark");
+    }
+
+    themeToggleBtn.addEventListener("click", toggleTheme);
+    if (themeToggleBtn2) themeToggleBtn2.addEventListener("click", toggleTheme);
+
+    const savedTheme = localStorage.getItem("vball_theme_mode");
+    applyTheme(savedTheme === "light");
+
+    let audioCtx = null;
+    function playBeep(freq = 600, dur = 0.05) {
+      try {
+        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+        gain.gain.setValueAtTime(0.08, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + dur);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + dur);
+      } catch(e) {}
+    }
+
+    /* =================================================================
+       4. FIREBASE REALTIME INITIALIZATION & DATABASE CONNECTIONS
+       ================================================================= */
+    const firebaseConfig = {
+      apiKey: "AIzaSyAMaypE270HuuxkWtHNORMgF5lyUJuxDuE",
+      authDomain: "natungram-volleyball.firebaseapp.com",
+      databaseURL: "https://natungram-volleyball-default-rtdb.asia-southeast1.firebasedatabase.app",
+      projectId: "natungram-volleyball",
+      storageBucket: "natungram-volleyball.firebasestorage.app",
+      messagingSenderId: "709930629908",
+      appId: "1:709930629908:web:aa2d9238851791e1442001"
+    };
+
+    let fbApp, fbDb, tourneyRef, connectedRef;
+    let isRemoteUpdating = false;
+
+    try {
+      fbApp = firebase.initializeApp(firebaseConfig);
+      fbDb = firebase.database();
+      tourneyRef = fbDb.ref("active_tournament");
+      connectedRef = fbDb.ref(".info/connected");
+    } catch (e) {
+      console.error("Firebase init failed:", e);
+    }
+
+    const cloudSyncStatus = document.getElementById("cloudSyncStatus");
+    if (connectedRef) {
+      connectedRef.on("value", (snap) => {
+        if (snap.val() === true) {
+          if (cloudSyncStatus) {
+            cloudSyncStatus.innerHTML = `<span class="pulse-dot"></span> Live Cloud Sync Active`;
+            cloudSyncStatus.style.borderColor = "var(--team-c)";
+            cloudSyncStatus.style.color = "var(--team-c)";
+          }
+        } else {
+          if (cloudSyncStatus) {
+            cloudSyncStatus.innerHTML = `⚠️ Offline Mode (Reconnecting...)`;
+            cloudSyncStatus.style.borderColor = "var(--accent-gold)";
+            cloudSyncStatus.style.color = "var(--accent-gold)";
+          }
+        }
+      });
+    }
+
+    function saveTournamentState() {
+      if (currentUserRole !== "admin") return;
+      if (isRemoteUpdating) return;
+
+      const state = {
+        pots,
+        teams,
+        teamOrder,
+        draftedPlayers: Array.from(draftedPlayers),
+        currentTeamIndex,
+        matches,
+        streamVideoId,
+        isStreamLive,
+        updatedAt: Date.now()
+      };
+
+      localStorage.setItem("mystery_dynamic_volleyball_state", JSON.stringify(state));
+
+      if (tourneyRef) {
+        tourneyRef.set(state).catch(err => console.error("Firebase broadcast error:", err));
+      }
+    }
+
+    function initRealtimeSync() {
+      if (!tourneyRef) {
+        loadSavedStateFallback();
+        return;
+      }
+
+      tourneyRef.on("value", (snapshot) => {
+        const data = snapshot.val();
+        if (data) {
+          isRemoteUpdating = true;
+          applyLoadedState(data);
+          isRemoteUpdating = false;
+        } else {
+          autoGenerateRoundRobin(false);
+          saveTournamentState();
+        }
+      });
+    }
+
+    function loadSavedStateFallback() {
+      const saved = localStorage.getItem("mystery_dynamic_volleyball_state");
+      if (saved) {
+        try {
+          applyLoadedState(JSON.parse(saved));
+        } catch(e) {
+          autoGenerateRoundRobin(false);
+        }
+      } else {
+        autoGenerateRoundRobin(false);
+      }
+    }
+
+    /* =================================================================
+       5. INDEXEDDB REPOSITORY FOR SAVED ARCHIVES & MEMORIES
+       ================================================================= */
+    const DB_NAME = "VolleyballTournamentDB";
+    const DB_VERSION = 1;
+    const STORE_NAME = "saved_tournaments";
+
+    function openDatabase() {
+      return new Promise((resolve, reject) => {
+        const req = indexedDB.open(DB_NAME, DB_VERSION);
+        req.onupgradeneeded = (e) => {
+          const db = e.target.result;
+          if (!db.objectStoreNames.contains(STORE_NAME)) {
+            db.createObjectStore(STORE_NAME, { keyPath: "id" });
+          }
+        };
+        req.onsuccess = () => resolve(req.result);
+        req.onerror = () => reject(req.error);
+      });
+    }
+
+    async function dbSaveRecord(record) {
+      const db = await openDatabase();
+      return new Promise((resolve, reject) => {
+        const tx = db.transaction(STORE_NAME, "readwrite");
+        const store = tx.objectStore(STORE_NAME);
+        store.put(record);
+        tx.oncomplete = () => resolve(record);
+        tx.onerror = () => reject(tx.error);
+      });
+    }
+
+    async function dbGetAllRecords() {
+      const db = await openDatabase();
+      return new Promise((resolve, reject) => {
+        const tx = db.transaction(STORE_NAME, "readonly");
+        const store = tx.objectStore(STORE_NAME);
+        const req = store.getAll();
+        req.onsuccess = () => resolve(req.result || []);
+        req.onerror = () => reject(req.error);
+      });
+    }
+
+    async function dbGetRecord(id) {
+      const db = await openDatabase();
+      return new Promise((resolve, reject) => {
+        const tx = db.transaction(STORE_NAME, "readonly");
+        const store = tx.objectStore(STORE_NAME);
+        const req = store.get(id);
+        req.onsuccess = () => resolve(req.result);
+        req.onerror = () => reject(req.error);
+      });
+    }
+
+    async function dbDeleteRecord(id) {
+      const db = await openDatabase();
+      return new Promise((resolve, reject) => {
+        const tx = db.transaction(STORE_NAME, "readwrite");
+        const store = tx.objectStore(STORE_NAME);
+        store.delete(id);
+        tx.oncomplete = () => resolve();
+        tx.onerror = () => reject(tx.error);
+      });
+    }
+
+    /* =================================================================
+       6. ROUND ROBIN & TOURNAMENT ENGINE
+       ================================================================= */
+    function autoGenerateRoundRobin(preserveScores = true) {
+      const oldMatches = [...matches];
+      matches = [];
+      let matchId = 1;
+
+      for (let i = 0; i < teamOrder.length; i++) {
+        for (let j = i + 1; j < teamOrder.length; j++) {
+          const t1 = teamOrder[i];
+          const t2 = teamOrder[j];
+
+          let existing = null;
+          if (preserveScores) {
+            existing = oldMatches.find(m => 
+              m.type === "league" && 
+              ((m.team1 === t1 && m.team2 === t2) || (m.team1 === t2 && m.team2 === t1))
+            );
+          }
+
+          matches.push({
+            id: matchId++,
+            type: "league",
+            team1: t1,
+            team2: t2,
+            score1: existing ? (existing.team1 === t1 ? existing.score1 : existing.score2) : 0,
+            score2: existing ? (existing.team1 === t1 ? existing.score2 : existing.score1) : 0,
+            status: existing ? existing.status : "Upcoming",
+            isLocked: existing ? existing.isLocked : false,
+            includeInTable: existing ? (existing.includeInTable !== false) : true
+          });
+        }
+      }
+
+      if (preserveScores) {
+        oldMatches.filter(m => m.type === "manual").forEach(m => {
+          if (teamOrder.includes(m.team1) && teamOrder.includes(m.team2)) {
+            matches.push({
+              ...m,
+              id: matchId++,
+              includeInTable: m.includeInTable !== false
+            });
+          }
+        });
+      }
+
+      matches.push({
+        id: matchId++,
+        type: "final",
+        team1: null,
+        team2: null,
+        score1: 0,
+        score2: 0,
+        status: "Locked",
+        isLocked: false,
+        includeInTable: false
+      });
+
+      refreshTournamentEngine();
+    }
+
+    addTeamBtn.addEventListener("click", () => {
+      if (currentUserRole !== "admin") return;
+      const name = newTeamInput.value.trim();
+      if (!name) return;
+      if (teamOrder.includes(name)) {
+        alert("A team with this name already exists!");
+        return;
+      }
+      teamOrder.push(name);
+      teams[name] = [];
+      newTeamInput.value = "";
+
+      renderTeamRosters();
+      populateMatchTeamSelects();
+      autoGenerateRoundRobin(true);
+      saveTournamentState();
+    });
+
+    window.deleteTeam = function(teamName) {
+      if (currentUserRole !== "admin") return;
+      if (teamOrder.length <= 2) {
+        alert("You must have at least 2 teams for the tournament!");
+        return;
+      }
+      if (confirm(`Delete "${teamName}"? Players will return to active pots and fixtures will auto-update across all phones.`)) {
+        (teams[teamName] || []).forEach(p => draftedPlayers.delete(p.name));
+        delete teams[teamName];
+        teamOrder = teamOrder.filter(t => t !== teamName);
+        if (currentTeamIndex >= teamOrder.length) currentTeamIndex = 0;
+
+        renderTeamRosters();
+        renderPlayerList();
+        setupMysteryBoxes();
+        populateMatchTeamSelects();
+        autoGenerateRoundRobin(true);
+        saveTournamentState();
+      }
+    };
+
+    function renderTeamRosters() {
+      teamsContainer.innerHTML = "";
+
+      teamOrder.forEach(teamName => {
+        const card = document.createElement("div");
+        card.className = "team-card";
+        
+        let borderCol = "var(--accent-gold)";
+        if (teamName === "Team A") borderCol = "var(--team-a)";
+        else if (teamName === "Team B") borderCol = "var(--team-b)";
+        else if (teamName === "Team C") borderCol = "var(--team-c)";
+        card.style.borderLeftColor = borderCol;
+
+        const isAdmin = currentUserRole === "admin";
+        let playersList = (teams[teamName] || []).map(playerObj => `
+          <li>
+            <div class="roster-info">
+              <span>${playerObj.name}</span>
+              <span class="role-tag">${playerObj.role}</span>
+            </div>
+            ${isAdmin ? `<button class="btn-team-remove" onclick="undraftPlayer('${playerObj.name}')">×</button>` : ''}
+          </li>
+        `).join("");
+
+        card.innerHTML = `
+          <div class="team-card-header">
+            <h3 style="color:${borderCol}">${teamName} <span>(${teams[teamName] ? teams[teamName].length : 0})</span></h3>
+            ${isAdmin ? `<button class="btn-delete-team" onclick="deleteTeam('${teamName}')" title="Delete Team">🗑️</button>` : ''}
+          </div>
+          <ul class="team-roster">${playersList}</ul>
+        `;
+        teamsContainer.appendChild(card);
+      });
+
+      updateTurnIndicator();
+      renderSidebarRoster();
+    }
+
+    function populateMatchTeamSelects() {
+      matchTeamSelect1.innerHTML = "";
+      matchTeamSelect2.innerHTML = "";
+
+      teamOrder.forEach(t => {
+        const opt1 = document.createElement("option");
+        opt1.value = t;
+        opt1.innerText = t;
+        matchTeamSelect1.appendChild(opt1);
+
+        const opt2 = document.createElement("option");
+        opt2.value = t;
+        opt2.innerText = t;
+        matchTeamSelect2.appendChild(opt2);
+      });
+
+      if (teamOrder.length > 1) matchTeamSelect2.selectedIndex = 1;
+    }
+
+    btnAddManualMatch.addEventListener("click", () => {
+      if (currentUserRole !== "admin") return;
+      const t1 = matchTeamSelect1.value;
+      const t2 = matchTeamSelect2.value;
+      if (!t1 || !t2 || t1 === t2) {
+        alert("Please select two distinct teams for the match!");
+        return;
+      }
+      const nextId = matches.reduce((max, m) => Math.max(max, m.id), 0) + 1;
+      matches.push({
+        id: nextId,
+        type: "manual",
+        team1: t1,
+        team2: t2,
+        score1: 0,
+        score2: 0,
+        status: "Upcoming",
+        isLocked: false,
+        includeInTable: true
+      });
+      refreshTournamentEngine();
+      saveTournamentState();
+    });
+
+    btnRegenerateRR.addEventListener("click", () => {
+      if (currentUserRole !== "admin") return;
+      if (confirm("Reset and re-generate complete Round-Robin schedule for current teams? (Scores will reset)")) {
+        autoGenerateRoundRobin(false);
+        saveTournamentState();
+      }
+    });
+
+    window.deleteMatch = function(matchId) {
+      if (currentUserRole !== "admin") return;
+      if (confirm(`Delete match #${matchId}?`)) {
+        matches = matches.filter(m => m.id !== matchId);
+        refreshTournamentEngine();
+        saveTournamentState();
+      }
+    };
+
+    window.toggleTableInclusion = function(matchId) {
+      if (currentUserRole !== "admin") return;
+      const match = matches.find(m => m.id === matchId);
+      if (!match) return;
+
+      match.includeInTable = !match.includeInTable;
+      playBeep(match.includeInTable ? 650 : 380, 0.06);
+
+      refreshTournamentEngine();
+      saveTournamentState();
+    };
+
+    /* =================================================================
+       7. LIVE VIDEO CONTROLS & PARSER
+       ================================================================= */
+    function extractYouTubeId(urlOrId) {
+      if (!urlOrId) return "";
+      const trimmed = urlOrId.trim();
+      if (/^[a-zA-Z0-9_-]{11}$/.test(trimmed)) {
+        return trimmed;
+      }
+      const match = trimmed.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|live\/|shorts\/))([\w-]{11})/);
+      return match ? match[1] : trimmed;
+    }
+
+    function renderVideoStream() {
+      if (isStreamLive) {
+        videoSectionHeading.innerHTML = `🔴 Live Match Broadcast`;
+        btnToggleStreamStatus.textContent = "Mark Finished";
+      } else {
+        videoSectionHeading.innerHTML = `📹 Live Video Match update`;
+        btnToggleStreamStatus.textContent = "Mark Live";
+      }
+
+      if (streamVideoId) {
+        if (streamVideoId.includes("channel=") || streamVideoId.includes("live_stream")) {
+          liveVideoFrame.src = `https://www.youtube.com/embed/${streamVideoId}&autoplay=0`;
+        } else {
+          liveVideoFrame.src = `https://www.youtube.com/embed/${streamVideoId}?autoplay=0`;
+        }
+      }
+    }
+
+    btnUpdateStream.addEventListener("click", () => {
+      if (currentUserRole !== "admin") return;
+      const val = streamUrlInput.value.trim();
+      if (!val) {
+        alert("Please enter a valid YouTube live stream URL or video ID!");
+        return;
+      }
+      streamVideoId = extractYouTubeId(val);
+      renderVideoStream();
+      saveTournamentState();
+      alert("✅ Video match player updated & broadcasted!");
+    });
+
+    btnToggleStreamStatus.addEventListener("click", () => {
+      if (currentUserRole !== "admin") return;
+      isStreamLive = !isStreamLive;
+      renderVideoStream();
+      saveTournamentState();
+    });
+
+    /* =================================================================
+       8. MYSTERY BOXES ARENA
+       ================================================================= */
+    function setupMysteryBoxes() {
+      const available = getAvailablePlayersInActivePot();
+      boxGrid.innerHTML = "";
+
+      if (available.length === 0) {
+        boxGrid.innerHTML = `<div style="grid-column: 1/-1; text-align:center; color:var(--text-muted); padding:30px 10px;">All players in this pot have been drafted!</div>`;
+        turnIndicator.innerText = `Category ${potSelect.value} Complete!`;
+        return;
+      }
+
+      mysteryBoxItems = [...available].sort(() => Math.random() - 0.5);
+
+      mysteryBoxItems.forEach((playerName, index) => {
+        const card = document.createElement("div");
+        card.className = "mystery-card";
+        card.dataset.index = index;
+        card.dataset.player = playerName;
+
+        card.innerHTML = `
+          <div class="card-face card-front">
+            <div class="chest-icon">📦</div>
+            <div class="box-number">BOX #${index + 1}</div>
+          </div>
+          <div class="card-face card-back">
+            <div style="font-size:1.6rem; margin-bottom:4px;">🌟</div>
+            <div class="revealed-name">${playerName}</div>
+            <div class="revealed-team" id="cardTeamTag-${index}">Drafted</div>
+          </div>
+        `;
+
+        card.addEventListener("click", () => {
+          if (currentUserRole !== "admin") {
+            alert("🔒 Lottery picking is restricted to Admin only! You are in Viewer mode.");
+            return;
+          }
+          pickMysteryBox(card, playerName, index);
+        });
+        boxGrid.appendChild(card);
+      });
+
+      updateTurnIndicator();
+    }
+
+    function shuffleBoxes() {
+      if (currentUserRole !== "admin") return;
+      playBeep(450, 0.08);
+      setTimeout(() => playBeep(650, 0.08), 80);
+      setupMysteryBoxes();
+    }
+
+    function pickMysteryBox(cardEl, playerName, index) {
+      if (currentUserRole !== "admin") return;
+      if (cardEl.classList.contains("opened") || draftedPlayers.has(playerName) || teamOrder.length === 0) return;
+
+      const activePot = potSelect.value;
+      const currentTeam = teamOrder[currentTeamIndex];
+
+      cardEl.classList.add("opened");
+      const teamTag = document.getElementById(`cardTeamTag-${index}`);
+      if (teamTag) {
+        teamTag.innerText = currentTeam;
+        teamTag.style.background = "var(--accent-gold)";
+        teamTag.style.color = "#000";
+      }
+
+      playBeep(440, 0.1);
+      setTimeout(() => playBeep(554, 0.1), 100);
+      setTimeout(() => playBeep(659, 0.2), 200);
+
+      draftedPlayers.add(playerName);
+      if (!teams[currentTeam]) teams[currentTeam] = [];
+      teams[currentTeam].push({ name: playerName, role: activePot });
+
+      setTimeout(() => {
+        modalPlayer.innerText = playerName;
+        modalTeam.innerText = `Drafted to ${currentTeam} (${activePot})`;
+        modal.classList.add("show");
+
+        currentTeamIndex = (currentTeamIndex + 1) % teamOrder.length;
+        renderTeamRosters();
+        renderPlayerList();
+        updateTurnIndicator();
+        saveTournamentState();
+      }, 500);
+    }
+
+    function updateTurnIndicator() {
+      const available = getAvailablePlayersInActivePot();
+      if (teamOrder.length === 0) {
+        turnIndicator.innerText = "Please add at least one team!";
+        return;
+      }
+      const currentTeam = teamOrder[currentTeamIndex];
+      if (available.length > 0) {
+        turnIndicator.innerText = `Up Next: Drafting for ${currentTeam}`;
+      } else {
+        turnIndicator.innerText = `Category ${potSelect.value} Complete!`;
+      }
+    }
+
+    modalCloseBtn.addEventListener("click", () => {
+      modal.classList.remove("show");
+      setupMysteryBoxes();
+    });
+
+    function getAvailablePlayersInActivePot() {
+      const activePot = potSelect.value;
+      return (pots[activePot] || []).filter(p => !draftedPlayers.has(p));
+    }
+
+    function renderPlayerList() {
+      playerListContainer.innerHTML = "";
+      const activePot = potSelect.value;
+      const allPlayers = pots[activePot] || [];
+      const isAdmin = currentUserRole === "admin";
+
+      allPlayers.forEach(player => {
+        const isDrafted = draftedPlayers.has(player);
+        const item = document.createElement("div");
+        item.className = `player-item ${isDrafted ? 'drafted' : ''}`;
+
+        let actionButtonsHtml = '';
+        if (isAdmin) {
+          if (!isDrafted) {
+            actionButtonsHtml = `<button class="btn-remove-pot" onclick="removePlayerFromPot('${activePot}', '${player}')">🗑️ Remove</button>`;
+          } else {
+            actionButtonsHtml = `
+              <button class="btn-undo" onclick="undraftPlayer('${player}')">↺ Undo</button>
+              <button class="btn-remove-pot" onclick="removePlayerFromPot('${activePot}', '${player}')">🗑️</button>
+            `;
+          }
+        }
+
+        item.innerHTML = `
+          <span class="player-name-span">${player}</span>
+          ${isAdmin ? `<div class="item-actions">${actionButtonsHtml}</div>` : ''}
+        `;
+        playerListContainer.appendChild(item);
+      });
+    }
+
+    addPlayerBtn.addEventListener("click", () => {
+      if (currentUserRole !== "admin") return;
+      const name = newPlayerInput.value.trim();
+      const activePot = potSelect.value;
+      if (name && !pots[activePot].includes(name)) {
+        pots[activePot].push(name);
+        newPlayerInput.value = "";
+        renderPlayerList();
+        setupMysteryBoxes();
+        saveTournamentState();
+      }
+    });
+
+    window.removePlayerFromPot = function(pot, name) {
+      if (currentUserRole !== "admin") return;
+      if (confirm(`Remove "${name}" from ${pot}?`)) {
+        pots[pot] = pots[pot].filter(p => p !== name);
+        draftedPlayers.delete(name);
+        teamOrder.forEach(teamKey => {
+          if (teams[teamKey]) {
+            teams[teamKey] = teams[teamKey].filter(p => p.name !== name);
+          }
+        });
+        renderPlayerList();
+        renderTeamRosters();
+        setupMysteryBoxes();
+        saveTournamentState();
+      }
+    };
+
+    window.undraftPlayer = function(name) {
+      if (currentUserRole !== "admin") return;
+      draftedPlayers.delete(name);
+      teamOrder.forEach(teamKey => {
+        if (teams[teamKey]) {
+          teams[teamKey] = teams[teamKey].filter(p => p.name !== name);
+        }
+      });
+      renderPlayerList();
+      renderTeamRosters();
+      setupMysteryBoxes();
+      saveTournamentState();
+    };
+
+    /* =================================================================
+       9. VOLLEYBALL MATCH EVALUATOR
+       ================================================================= */
+    function evaluateWinner(s1, s2, team1, team2) {
+      if (s1 > s2) return 1;
+      if (s2 > s1) return 2;
+      return 0;
+    }
+
+    window.toggleMatchLock = function(matchId) {
+      if (currentUserRole !== "admin") return;
+      const match = matches.find(m => m.id === matchId);
+      if (!match || !match.team1 || !match.team2) return;
+
+      match.isLocked = !match.isLocked;
+      playBeep(match.isLocked ? 350 : 700, 0.08);
+
+      refreshTournamentEngine();
+      saveTournamentState();
+    };
+
+    function addPoint(matchId, teamNum) {
+      if (currentUserRole !== "admin") return;
+      const match = matches.find(m => m.id === matchId);
+      if (!match || !match.team1 || !match.team2 || match.isLocked) return;
+      if (teamNum === 1) match.score1++;
+      if (teamNum === 2) match.score2++;
+      refreshTournamentEngine();
+      saveTournamentState();
+    }
+
+    function subPoint(matchId, teamNum) {
+      if (currentUserRole !== "admin") return;
+      const match = matches.find(m => m.id === matchId);
+      if (!match || !match.team1 || !match.team2 || match.isLocked) return;
+      if (teamNum === 1 && match.score1 > 0) match.score1--;
+      if (teamNum === 2 && match.score2 > 0) match.score2--;
+      refreshTournamentEngine();
+      saveTournamentState();
+    }
+
+    function updateMatchStatus(match) {
+      if (!match.team1 || !match.team2) {
+        match.status = "Locked";
+        return;
+      }
+      if (match.isLocked) {
+        match.status = "Finished";
+      } else if (match.score1 > 0 || match.score2 > 0) {
+        match.status = "Live";
+      } else {
+        match.status = "Upcoming";
+      }
+    }
+
+    function calculateLeagueStandings() {
+      const stats = {};
+      teamOrder.forEach(t => {
+        stats[t] = { key: t, name: t, played: 0, won: 0, lost: 0, pf: 0, pa: 0, pts: 0 };
+      });
+
+      matches.forEach(m => {
+        if (m.includeInTable === false) return;
+        if (!stats[m.team1] || !stats[m.team2]) return;
+
+        stats[m.team1].pf += m.score1;
+        stats[m.team1].pa += m.score2;
+        stats[m.team2].pf += m.score2;
+        stats[m.team2].pa += m.score1;
+
+        if (m.isLocked) {
+          stats[m.team1].played++;
+          stats[m.team2].played++;
+
+          const decidedWinner = evaluateWinner(m.score1, m.score2, m.team1, m.team2);
+          if (decidedWinner === 1) {
+            stats[m.team1].won++;
+            stats[m.team1].pts += 2;
+            stats[m.team2].lost++;
+          } else if (decidedWinner === 2) {
+            stats[m.team2].won++;
+            stats[m.team2].pts += 2;
+            stats[m.team1].lost++;
+          }
+        }
+      });
+
+      return Object.values(stats).sort((a, b) => {
+        if (b.pts !== a.pts) return b.pts - a.pts;
+        const diffA = a.pf - a.pa;
+        const diffB = b.pf - b.pa;
+        if (diffB !== diffA) return diffB - diffA;
+        return b.pf - a.pf;
+      });
+    }
+
+    function refreshTournamentEngine() {
+      matches.forEach(m => updateMatchStatus(m));
+
+      const tableArray = calculateLeagueStandings();
+      const finalMatch = matches.find(m => m.type === "final");
+      
+      if (finalMatch) {
+        const eligibleMatches = matches.filter(m => m.type !== "final" && m.includeInTable !== false);
+        const allEligibleFinished = eligibleMatches.length > 0 && eligibleMatches.every(m => m.isLocked);
+
+        if (allEligibleFinished && tableArray.length >= 2) {
+          const top1 = tableArray[0].key;
+          const top2 = tableArray[1].key;
+          if (finalMatch.team1 !== top1 || finalMatch.team2 !== top2) {
+            finalMatch.team1 = top1;
+            finalMatch.team2 = top2;
+            finalMatch.score1 = 0;
+            finalMatch.score2 = 0;
+            finalMatch.isLocked = false;
+          }
+          updateMatchStatus(finalMatch);
+        } else {
+          finalMatch.team1 = null;
+          finalMatch.team2 = null;
+          finalMatch.score1 = 0;
+          finalMatch.score2 = 0;
+          finalMatch.status = "Locked";
+          finalMatch.isLocked = false;
+        }
+      }
+
+      renderPointsTable(tableArray);
+      renderMatches();
+    }
+
+    function renderPointsTable(tableArray) {
+      const tbody = document.getElementById("pointsTableBody");
+      tbody.innerHTML = "";
+
+      tableArray.forEach((t, idx) => {
+        const diff = t.pf - t.pa;
+        const qualifies = idx < 2 ? '<span style="color:var(--accent-gold); font-size:0.75rem; margin-left:4px;">★ Top Seed</span>' : '';
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td style="font-weight:bold; text-align:left;">#${idx + 1} ${t.name} ${qualifies}</td>
+          <td>${t.played}</td>
+          <td>${t.won}</td>
+          <td>${t.lost}</td>
+          <td>${t.pf}</td>
+          <td>${t.pa}</td>
+          <td style="color:${diff > 0 ? '#10b981' : (diff < 0 ? '#ef4444' : 'inherit')}">${diff > 0 ? '+' : ''}${diff}</td>
+          <td><strong style="color:var(--accent-gold); font-size:1.05rem;">${t.pts}</strong></td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function renderMatches() {
+      const container = document.getElementById("fixturesContainer");
+      container.innerHTML = "";
+      const isAdmin = currentUserRole === "admin";
+
+      matches.forEach(m => {
+        const isFinal = m.type === "final";
+        const isStageLocked = !m.team1 || !m.team2;
+        const isFrozen = isStageLocked || m.isLocked || !isAdmin;
+
+        let t1Name = m.team1 ? m.team1 : 'Top #1 Team';
+        let t2Name = m.team2 ? m.team2 : 'Top #2 Team';
+
+        let statusBadgeText = m.status.toUpperCase();
+        let statusClass = m.status === 'Live' ? 'live' : (m.status === 'Finished' ? 'finished' : '');
+        if (isFinal && m.status === 'Finished') statusClass += ' final-badge';
+
+        let bannerHtml = '';
+        if (isStageLocked) {
+          bannerHtml = `<div style="text-align:center; color:var(--text-muted); font-size:0.8rem; margin-top:10px;">🔒 Locked until all tournament matches are finished and locked</div>`;
+        } else if (m.isLocked) {
+          const winner = evaluateWinner(m.score1, m.score2, m.team1, m.team2);
+          if (winner !== 0) {
+            const winTeamName = winner === 1 ? t1Name : t2Name;
+            const finalScore = winner === 1 ? `${m.score1} - ${m.score2}` : `${m.score2} - ${m.score1}`;
+            if (isFinal) {
+              bannerHtml = `<div class="championship-banner">👑 CHAMPIONS: ${winTeamName} (${finalScore}) 🏆</div>`;
+            } else {
+              bannerHtml = `<div class="winner-banner">🏆 Match Winner: ${winTeamName} (${finalScore})</div>`;
+            }
+          } else {
+            bannerHtml = `<div class="winner-banner" style="border-color:var(--card-border); color:var(--text);">⚖️ Match Ended in a Draw (${m.score1} - ${m.score2})</div>`;
+          }
+        }
+
+        const lockBtnClass = m.isLocked ? "is-locked" : "is-unlocked";
+        const lockBtnText = m.isLocked ? "🔒 Locked" : "🔓 Ongoing";
+        const lockBtnDisabled = isStageLocked ? "disabled" : "";
+
+        const isTableIncluded = m.includeInTable !== false;
+        const tableBtnClass = isTableIncluded ? "on" : "off";
+        const tableBtnText = isTableIncluded ? "✅ Table: ON" : "❌ Table: OFF";
+
+        const box = document.createElement("div");
+        box.className = `match-box ${isFinal ? 'final-box' : ''} ${isStageLocked ? 'locked' : ''}`;
+        box.innerHTML = `
+          <div class="match-header">
+            <span>
+              <strong>${isFinal ? '🏆 GRAND FINAL' : 'Match #' + m.id}</strong> 
+              ${m.type === 'manual' ? '<span style="font-size:0.75rem; color:var(--accent-gold);">(Custom)</span>' : ''}
+            </span>
+            <div class="header-right">
+              ${isAdmin && !isFinal ? `
+                <button class="btn-table-toggle ${tableBtnClass}" onclick="toggleTableInclusion(${m.id})" title="Toggle Points Table Inclusion">
+                  ${tableBtnText}
+                </button>
+              ` : ''}
+              ${isAdmin ? `
+                <button class="btn-lock-toggle ${lockBtnClass}" onclick="toggleMatchLock(${m.id})" ${lockBtnDisabled} title="Freeze scores and declare winner">
+                  ${lockBtnText}
+                </button>
+              ` : ''}
+              <span class="match-status-badge ${statusClass}">${statusBadgeText}</span>
+              ${isAdmin && !isFinal ? `<button class="btn-delete-match" onclick="deleteMatch(${m.id})" title="Delete Match">✕</button>` : ''}
+            </div>
+          </div>
+          <div class="score-arena">
+            <div class="team-score-side">
+              <h4>${t1Name}</h4>
+              <div class="point-display ${isFrozen ? 'locked-score' : ''} ${!isAdmin ? 'viewer-mode-score' : ''}" onclick="${!isFrozen ? `openKeypad(${m.id}, 1, '${t1Name}')` : ''}">${m.score1}</div>
+              ${isAdmin ? `
+                <div class="score-buttons">
+                  <button class="btn-score-adjust" onclick="subPoint(${m.id}, 1)" ${isFrozen ? 'disabled' : ''}>-1</button>
+                  <button class="btn-score-adjust" onclick="addPoint(${m.id}, 1)" style="flex:1;" ${isFrozen ? 'disabled' : ''}>+1 Pt</button>
+                </div>
+              ` : ''}
+            </div>
+            <div class="vs-divider">VS</div>
+            <div class="team-score-side">
+              <h4>${t2Name}</h4>
+              <div class="point-display ${isFrozen ? 'locked-score' : ''} ${!isAdmin ? 'viewer-mode-score' : ''}" onclick="${!isFrozen ? `openKeypad(${m.id}, 2, '${t2Name}')` : ''}">${m.score2}</div>
+              ${isAdmin ? `
+                <div class="score-buttons">
+                  <button class="btn-score-adjust" onclick="subPoint(${m.id}, 2)" ${isFrozen ? 'disabled' : ''}>-1</button>
+                  <button class="btn-score-adjust" onclick="addPoint(${m.id}, 2)" style="flex:1;" ${isFrozen ? 'disabled' : ''}>+1 Pt</button>
+                </div>
+              ` : ''}
+            </div>
+          </div>
+          ${isAdmin ? `<button class="keypad-trigger-btn" onclick="openKeypad(${m.id}, 1, '${t1Name}')" ${isFrozen ? 'disabled' : ''}>🔢 Edit Scores (Keypad)</button>` : ''}
+          ${bannerHtml}
+        `;
+        container.appendChild(box);
+      });
+    }
+
+    /* =================================================================
+       10. NUMPAD SCOREPAD
+       ================================================================= */
+    let currentKeypadMatchId = null;
+    let currentKeypadTeamNum = null;
+    let keypadBuffer = "0";
+
+    const numpadModal = document.getElementById("numpadModal");
+    const numpadDisplay = document.getElementById("numpadDisplay");
+    const numpadTargetTitle = document.getElementById("numpadTargetTitle");
+
+    window.openKeypad = function(matchId, teamNum, teamName) {
+      if (currentUserRole !== "admin") return;
+      const match = matches.find(m => m.id === matchId);
+      if (!match || !match.team1 || !match.team2 || match.isLocked) return;
+      currentKeypadMatchId = matchId;
+      currentKeypadTeamNum = teamNum;
+      keypadBuffer = String(teamNum === 1 ? match.score1 : match.score2);
+      numpadDisplay.innerText = keypadBuffer;
+      numpadTargetTitle.innerText = `Score: ${match.type === 'final' ? 'Grand Final' : 'Match #' + matchId} - ${teamName}`;
+      numpadModal.classList.add("open");
+    };
+
+    window.pressKey = function(val) {
+      if (currentUserRole !== "admin") return;
+      if (keypadBuffer === "0") keypadBuffer = String(val);
+      else if (keypadBuffer.length < 3) keypadBuffer += String(val);
+      numpadDisplay.innerText = keypadBuffer;
+    };
+
+    window.clearKeypad = function() {
+      if (currentUserRole !== "admin") return;
+      keypadBuffer = "0"; 
+      numpadDisplay.innerText = keypadBuffer; 
+    };
+    window.backspaceKeypad = function() {
+      if (currentUserRole !== "admin") return;
+      keypadBuffer = keypadBuffer.slice(0, -1);
+      if (!keypadBuffer) keypadBuffer = "0";
+      numpadDisplay.innerText = keypadBuffer;
+    };
+
+    window.saveKeypadScore = function() {
+      if (currentUserRole !== "admin") return;
+      const match = matches.find(m => m.id === currentKeypadMatchId);
+      if (!match || match.isLocked) return;
+      const score = parseInt(keypadBuffer, 10) || 0;
+      if (currentKeypadTeamNum === 1) match.score1 = score;
+      if (currentKeypadTeamNum === 2) match.score2 = score;
+      numpadModal.classList.remove("open");
+      refreshTournamentEngine();
+      saveTournamentState();
+    };
+
+    numpadModal.addEventListener("click", (e) => {
+      if (e.target === numpadModal) numpadModal.classList.remove("open");
+    });
+
+    /* =================================================================
+       11. STATE SNAPSHOT & SAVED ARCHIVES (4 SECTIONS + MEMORIES)
+       ================================================================= */
+    function getTournamentStateObject() {
+      const tableArray = calculateLeagueStandings();
+      const finalMatch = matches.find(m => m.type === "final");
+      let champion = "Pending Final";
+
+      if (finalMatch && finalMatch.isLocked) {
+        const w = evaluateWinner(finalMatch.score1, finalMatch.score2, finalMatch.team1, finalMatch.team2);
+        if (w === 1) champion = finalMatch.team1;
+        else if (w === 2) champion = finalMatch.team2;
+      } else if (tableArray.length > 0 && tableArray[0].played > 0) {
+        champion = `${tableArray[0].name} (Table Leader)`;
+      }
+
+      return {
+        id: "tourney_" + Date.now(),
+        name: "Natungram Tourney " + new Date().toLocaleDateString(),
+        exportDate: new Date().toLocaleString(),
+        champion,
+        pots,
+        teams,
+        teamOrder,
+        draftedPlayers: Array.from(draftedPlayers),
+        currentTeamIndex,
+        matches,
+        pointsTable: tableArray,
+        memories: [],
+        streamVideoId,
+        isStreamLive
+      };
+    }
+
+    saveDraftBtn.addEventListener("click", () => {
+      requestPassnumber(() => {
+        saveTournamentState();
+        alert("✅ Synced to Firebase Cloud and saved locally!");
+      });
+    });
+
+    async function loadSavedArchivesList() {
+      try {
+        const records = await dbGetAllRecords();
+        savedFilesListContainer.innerHTML = "";
+
+        if (records.length === 0) {
+          savedFilesListContainer.innerHTML = `
+            <div style="text-align:center; color:var(--text-muted); padding:20px; font-size:0.85rem;">
+              No archived tournaments found.
+            </div>
+          `;
+          return;
+        }
+
+        records.sort((a, b) => b.id.localeCompare(a.id)).forEach(record => {
+          const card = document.createElement("div");
+          card.className = `saved-file-card ${currentActiveSavedRecordId === record.id ? 'active-card' : ''}`;
+          card.onclick = () => displaySavedFileDetails(record.id);
+
+          const photosCount = (record.memories && record.memories.length) || 0;
+
+          card.innerHTML = `
+            <div class="saved-file-title">
+              <span>${record.name}</span>
+              <span class="saved-file-badge">🏆 ${record.champion}</span>
+            </div>
+            <div class="saved-file-date">📅 ${record.exportDate} &bull; 📸 ${photosCount} photos</div>
+          `;
+          savedFilesListContainer.appendChild(card);
+        });
+      } catch (err) {
+        console.error("Failed to load saved archives:", err);
+      }
+    }
+
+    async function displaySavedFileDetails(id) {
+      currentActiveSavedRecordId = id;
+      const record = await dbGetRecord(id);
+      if (!record) return;
+
+      loadSavedArchivesList();
+
+      savedFileEmptyPlaceholder.style.display = "none";
+      savedFileDetailContainer.style.display = "block";
+
+      viewFileName.textContent = record.name;
+      viewFileDate.textContent = `Archived on: ${record.exportDate}`;
+      viewFileChampionBadge.textContent = `👑 Champion: ${record.champion}`;
+
+      // 1. TEAM PLAYERS
+      viewTeamsContainer.innerHTML = "";
+      (record.teamOrder || []).forEach(teamName => {
+        const tBox = document.createElement("div");
+        tBox.className = "saved-team-box";
+        const playerList = (record.teams && record.teams[teamName] ? record.teams[teamName] : []).map(p => `
+          <li>
+            <span>${p.name}</span>
+            <span class="role-tag">${p.role}</span>
+          </li>
+        `).join("") || `<li style="color:var(--text-muted); font-style:italic;">No players drafted</li>`;
+
+        tBox.innerHTML = `
+          <h4>${teamName} <span style="font-size:0.8rem; color:var(--accent-gold);">(${record.teams && record.teams[teamName] ? record.teams[teamName].length : 0} Players)</span></h4>
+          <ul class="saved-roster-list">${playerList}</ul>
+        `;
+        viewTeamsContainer.appendChild(tBox);
+      });
+
+      // 2. MATCHES SUMMARY
+      viewMatchesContainer.innerHTML = "";
+      (record.matches || []).forEach(m => {
+        const isFinal = m.type === "final";
+        const w = evaluateWinner(m.score1, m.score2, m.team1, m.team2);
+        let winnerText = "Match Incomplete";
+        if (m.isLocked) {
+          if (w === 1) winnerText = `Winner: ${m.team1}`;
+          else if (w === 2) winnerText = `Winner: ${m.team2}`;
+          else winnerText = "Result: Draw";
+        }
+
+        const mBox = document.createElement("div");
+        mBox.className = `match-box ${isFinal ? 'final-box' : ''}`;
+        mBox.innerHTML = `
+          <div class="match-header">
+            <strong>${isFinal ? '🏆 GRAND FINAL' : 'Match #' + m.id}</strong>
+            <span class="match-status-badge ${m.status === 'Finished' ? 'finished' : ''}">${m.status.toUpperCase()}</span>
+          </div>
+          <div class="score-arena" style="margin:8px 0;">
+            <div class="team-score-side">
+              <h4>${m.team1 || 'TBD'}</h4>
+              <div class="point-display" style="font-size:2rem;">${m.score1}</div>
+            </div>
+            <div class="vs-divider">VS</div>
+            <div class="team-score-side">
+              <h4>${m.team2 || 'TBD'}</h4>
+              <div class="point-display" style="font-size:2rem;">${m.score2}</div>
+            </div>
+          </div>
+          <div class="winner-banner" style="font-size:0.8rem; padding:4px;">${winnerText}</div>
+        `;
+        viewMatchesContainer.appendChild(mBox);
+      });
+
+      // 3. POINTS TABLE
+      viewPointsTableBody.innerHTML = "";
+      (record.pointsTable || []).forEach((t, idx) => {
+        const diff = t.pf - t.pa;
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td style="font-weight:bold; text-align:left;">#${idx + 1} ${t.name}</td>
+          <td>${t.played}</td>
+          <td>${t.won}</td>
+          <td>${t.lost}</td>
+          <td>${t.pf}</td>
+          <td>${t.pa}</td>
+          <td style="color:${diff > 0 ? '#10b981' : (diff < 0 ? '#ef4444' : 'inherit')}">${diff > 0 ? '+' : ''}${diff}</td>
+          <td><strong style="color:var(--accent-gold);">${t.pts}</strong></td>
+        `;
+        viewPointsTableBody.appendChild(tr);
+      });
+
+      // 4. MEMORIES
+      renderMemoriesGallery(record.memories || []);
+    }
+
+    function renderMemoriesGallery(memories) {
+      viewMemoriesGrid.innerHTML = "";
+      if (!memories || memories.length === 0) {
+        viewMemoriesGrid.innerHTML = `
+          <div style="grid-column: 1/-1; text-align:center; padding:30px; color:var(--text-muted); font-size:0.9rem;">
+            No memories or winning team photos uploaded yet.
+          </div>
+        `;
+        return;
+      }
+
+      const isAdmin = currentUserRole === "admin";
+      memories.forEach(mem => {
+        const item = document.createElement("div");
+        item.className = "gallery-item";
+        item.innerHTML = `
+          <img src="${mem.dataUrl}" alt="${mem.caption}" class="gallery-img" onclick="openLightbox('${mem.dataUrl}', '${mem.caption}')" />
+          <div class="gallery-meta">
+            <span class="gallery-caption" title="${mem.caption}">${mem.caption || 'Celebration Photo'}</span>
+            ${isAdmin ? `<button class="btn-delete-photo" onclick="deleteMemoryPhoto('${mem.id}')" title="Delete Photo">🗑️</button>` : ''}
+          </div>
+        `;
+        viewMemoriesGrid.appendChild(item);
+      });
+    }
+
+    btnChoosePhoto.addEventListener("click", () => {
+      if (currentUserRole !== "admin") return;
+      memoryPhotoInput.click();
+    });
+
+    memoryPhotoInput.addEventListener("change", (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement("canvas");
+          const maxDim = 1200;
+          let w = img.width;
+          let h = img.height;
+          if (w > maxDim || h > maxDim) {
+            if (w > h) { h = Math.round((h * maxDim) / w); w = maxDim; }
+            else { w = Math.round((w * maxDim) / h); h = maxDim; }
+          }
+          canvas.width = w;
+          canvas.height = h;
+          const ctx = canvas.getContext("2d");
+          ctx.drawImage(img, 0, 0, w, h);
+          selectedMemoryBase64 = canvas.toDataURL("image/jpeg", 0.85);
+          btnChoosePhoto.textContent = `✅ ${file.name.substring(0, 15)}... (Ready)`;
+        };
+        img.src = event.target.result;
+      };
+      reader.readAsDataURL(file);
+    });
+
+    btnSavePhoto.addEventListener("click", async () => {
+      if (currentUserRole !== "admin") return;
+      if (!currentActiveSavedRecordId) {
+        alert("Please select a saved file from the list first!");
+        return;
+      }
+      if (!selectedMemoryBase64) {
+        alert("Please choose a photo to upload!");
+        return;
+      }
+
+      const caption = memoryCaptionInput.value.trim() || "Winning Team Moment";
+      const record = await dbGetRecord(currentActiveSavedRecordId);
+      if (!record) return;
+
+      if (!record.memories) record.memories = [];
+      record.memories.push({
+        id: "mem_" + Date.now(),
+        dataUrl: selectedMemoryBase64,
+        caption: caption,
+        uploadedAt: new Date().toLocaleDateString()
+      });
+
+      await dbSaveRecord(record);
+
+      selectedMemoryBase64 = null;
+      memoryPhotoInput.value = "";
+      memoryCaptionInput.value = "";
+      btnChoosePhoto.textContent = "📷 Select Winning Team Photo";
+
+      displaySavedFileDetails(currentActiveSavedRecordId);
+      alert("🎉 Winning team photo added to Memories!");
+    });
+
+    window.deleteMemoryPhoto = async function(memId) {
+      if (currentUserRole !== "admin") return;
+      if (!confirm("Delete this photo from tournament memories?")) return;
+      const record = await dbGetRecord(currentActiveSavedRecordId);
+      if (!record) return;
+
+      record.memories = (record.memories || []).filter(m => m.id !== memId);
+      await dbSaveRecord(record);
+      displaySavedFileDetails(currentActiveSavedRecordId);
+    };
+
+    window.openLightbox = function(url, caption) {
+      lightboxImg.src = url;
+      lightboxCaption.textContent = caption || "";
+      lightboxModal.classList.add("open");
+    };
+    lightboxCloseBtn.addEventListener("click", () => lightboxModal.classList.remove("open"));
+    lightboxModal.addEventListener("click", (e) => {
+      if (e.target === lightboxModal) lightboxModal.classList.remove("open");
+    });
+
+    btnDeleteSavedTournament.addEventListener("click", () => {
+      if (currentUserRole !== "admin") return;
+      if (!currentActiveSavedRecordId) return;
+      requestPassnumber(async () => {
+        if (confirm("Delete this saved archive permanently?")) {
+          await dbDeleteRecord(currentActiveSavedRecordId);
+          currentActiveSavedRecordId = null;
+          savedFileDetailContainer.style.display = "none";
+          savedFileEmptyPlaceholder.style.display = "block";
+          loadSavedArchivesList();
+        }
+      });
+    });
+
+    btnRestoreSavedTournament.addEventListener("click", () => {
+      if (currentUserRole !== "admin") return;
+      if (!currentActiveSavedRecordId) return;
+      requestPassnumber(async () => {
+        if (confirm("Restore this saved tournament to Live? All phones will sync to this restored state.")) {
+          const record = await dbGetRecord(currentActiveSavedRecordId);
+          if (record) {
+            applyLoadedState(record);
+            saveTournamentState();
+            switchView("matches");
+            alert("✅ Tournament restored to active portal!");
+          }
+        }
+      });
+    });
+
+    btnQuickArchiveCurrent.addEventListener("click", () => {
+      if (currentUserRole !== "admin") return;
+      requestPassnumber(async () => {
+        const state = getTournamentStateObject();
+        const customName = prompt("Enter a name for this tournament archive:", state.name);
+        if (customName === null) return;
+        if (customName.trim()) state.name = customName.trim();
+
+        await dbSaveRecord(state);
+        await loadSavedArchivesList();
+        displaySavedFileDetails(state.id);
+        alert(`📁 "${state.name}" successfully archived!`);
+      });
+    });
+
+    /* =================================================================
+       12. EXPORT / IMPORT STATE
+       ================================================================= */
+    saveAsBtn.addEventListener("click", () => {
+      if (currentUserRole !== "admin") return;
+      requestPassnumber(() => {
+        const today = new Date().toISOString().slice(0,10);
+        saveAsFileName.value = `natungram-volleyball-${today}`;
+        saveasModal.classList.add("open");
+        saveAsFileName.focus();
+      });
+    });
+
+    btnCancelSaveAs.addEventListener("click", () => saveasModal.classList.remove("open"));
+    saveasModal.addEventListener("click", (e) => {
+      if (e.target === saveasModal) saveasModal.classList.remove("open");
+    });
+
+    btnConfirmSaveAs.addEventListener("click", async () => {
+      if (currentUserRole !== "admin") return;
+      let rawName = saveAsFileName.value.trim() || "tournament-data";
+      const dataObj = getTournamentStateObject();
+      dataObj.name = rawName;
+
+      await dbSaveRecord(dataObj);
+
+      if (!rawName.endsWith(".json")) rawName += ".json";
+      const jsonStr = JSON.stringify(dataObj, null, 2);
+      const blob = new Blob([jsonStr], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+
+      const downloadLink = document.createElement("a");
+      downloadLink.href = url;
+      downloadLink.download = rawName;
+      document.body.appendChild(downloadLink);
+      downloadLink.click();
+      document.body.removeChild(downloadLink);
+      URL.revokeObjectURL(url);
+
+      saveasModal.classList.remove("open");
+      toggleSidebar(false);
+      alert(`💾 Archived to Saved Files and exported as "${rawName}"!`);
+    });
+
+    loadTournamentFileBtn.addEventListener("click", () => {
+      if (currentUserRole !== "admin") return;
+      requestPassnumber(() => {
+        fileUploadInput.value = "";
+        fileUploadInput.click();
+      });
+    });
+
+    fileUploadInput.addEventListener("change", (e) => {
+      if (currentUserRole !== "admin") return;
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = async function(event) {
+        try {
+          const parsed = JSON.parse(event.target.result);
+          applyLoadedState(parsed);
+          saveTournamentState();
+          await dbSaveRecord({
+            ...getTournamentStateObject(),
+            name: file.name.replace(".json", "")
+          });
+          toggleSidebar(false);
+          alert(`📂 Loaded "${file.name}" and broadcasted live!`);
+        } catch (err) {
+          console.error(err);
+          alert("❌ Error: Invalid tournament JSON file!");
+        }
+      };
+      reader.readAsText(file);
+    });
+
+    function applyLoadedState(data) {
+      if (data.pots) {
+        Object.keys(data.pots).forEach(p => { pots[p] = data.pots[p]; });
+      }
+      if (data.teamOrder && Array.isArray(data.teamOrder)) {
+        teamOrder = data.teamOrder;
+      }
+      if (data.teams && typeof data.teams === 'object') {
+        teams = data.teams;
+      }
+      draftedPlayers = new Set(data.draftedPlayers || []);
+      currentTeamIndex = typeof data.currentTeamIndex === 'number' ? data.currentTeamIndex : 0;
+      if (data.matches && Array.isArray(data.matches)) {
+        matches = data.matches;
+      } else {
+        autoGenerateRoundRobin(false);
+      }
+
+      if (data.streamVideoId !== undefined) {
+        streamVideoId = data.streamVideoId;
+      }
+      if (data.isStreamLive !== undefined) {
+        isStreamLive = data.isStreamLive;
+      }
+
+      renderPlayerList();
+      renderTeamRosters();
+      setupMysteryBoxes();
+      populateMatchTeamSelects();
+      refreshTournamentEngine();
+      renderVideoStream();
+    }
+
+    /* =================================================================
+       13. NAVIGATION & PRINT
+       ================================================================= */
+    function switchView(viewName) {
+      draftViewPage.classList.remove('active-view');
+      matchesViewPage.classList.remove('active-view');
+      savedFilesViewPage.classList.remove('active-view');
+
+      if (viewName === 'matches') {
+        matchesViewPage.classList.add('active-view');
+        populateMatchTeamSelects();
+        refreshTournamentEngine();
+        renderVideoStream();
+      } else if (viewName === 'saved') {
+        savedFilesViewPage.classList.add('active-view');
+        loadSavedArchivesList();
+      } else {
+        draftViewPage.classList.add('active-view');
+      }
+      toggleSidebar(false);
+      window.scrollTo(0, 0);
+    }
+
+    sidebarMatchesBtn.addEventListener("click", () => switchView('matches'));
+    sidebarSavedBtn.addEventListener("click", () => switchView('saved'));
+    navSavedFilesBtn.addEventListener("click", () => switchView('saved'));
+    navSavedFilesBtn2.addEventListener("click", () => switchView('saved'));
+    backFromSavedBtn.addEventListener("click", () => switchView('matches'));
+
+    backToDraftBtn.addEventListener("click", () => {
+      switchView('draft');
+    });
+
+    function toggleSidebar(open) {
+      if (open) {
+        sidebar.classList.add("open");
+        sidebarOverlay.classList.add("active");
+        renderSidebarRoster();
+      } else {
+        sidebar.classList.remove("open");
+        sidebarOverlay.classList.remove("active");
+      }
+    }
+
+    openSidebarBtn.addEventListener("click", () => toggleSidebar(true));
+    openSidebarBtn2.addEventListener("click", () => toggleSidebar(true));
+    if (openSidebarBtn3) openSidebarBtn3.addEventListener("click", () => toggleSidebar(true));
+    closeSidebarBtn.addEventListener("click", () => toggleSidebar(false));
+    sidebarOverlay.addEventListener("click", () => toggleSidebar(false));
+
+    function renderSidebarRoster() {
+      sidebarRosterPreview.innerHTML = "";
+      teamOrder.forEach(key => {
+        const block = document.createElement("div");
+        block.className = "preview-team-block";
+        let playersList = (teams[key] || []).map(p => `
+          <div class="preview-player-row">
+            <span>${p.name}</span>
+            <span style="color: var(--text-muted); font-size: 0.75rem;">${p.role}</span>
+          </div>
+        `).join("");
+        if (!teams[key] || teams[key].length === 0) playersList = `<div style="color:var(--text-muted); font-style:italic;">No players drafted</div>`;
+        block.innerHTML = `
+          <div class="preview-team-title">${key} (${teams[key] ? teams[key].length : 0})</div>
+          ${playersList}
+        `;
+        sidebarRosterPreview.appendChild(block);
+      });
+    }
+
+    copyRosterBtn.addEventListener("click", () => {
+      let text = "🏆 NATUNGRAM VOLLEYBALL TOURNAMENT SUMMARY 🏆\n\n";
+      teamOrder.forEach(key => {
+        text += `--- ${key} (${teams[key] ? teams[key].length : 0} Players) ---\n`;
+        (teams[key] || []).forEach((p, idx) => {
+          text += `  ${idx + 1}. ${p.name} [${p.role}]\n`;
+        });
+        text += "\n";
+      });
+      navigator.clipboard.writeText(text).then(() => alert("📋 Summary copied to clipboard!"));
+    });
+
+    resetDraftBtn.addEventListener("click", () => {
+      if (currentUserRole !== "admin") return;
+      if (confirm("Reset entire tournament? All cloud data and picks will clear.")) {
+        draftedPlayers.clear();
+        teamOrder = ["Team A", "Team B", "Team C"];
+        teams = { "Team A": [], "Team B": [], "Team C": [] };
+        currentTeamIndex = 0;
+        localStorage.removeItem("mystery_dynamic_volleyball_state");
+        autoGenerateRoundRobin(false);
+        saveTournamentState();
+      }
+    });
+
+    downloadPdfBtn.addEventListener("click", () => {
+      if (currentUserRole !== "admin") return;
+      requestPassnumber(() => {
+        let html = `
+          <div class="print-header">
+            <h1>Natungram Volleyball Weekly Tournament - Official Rosters</h1>
+            <p>Generated: ${new Date().toLocaleDateString()}</p>
+          </div>
+          <div class="print-grid">
+        `;
+        teamOrder.forEach(key => {
+          html += `
+            <div class="print-col">
+              <h2>${key} (${teams[key] ? teams[key].length : 0})</h2>
+              <table>
+                <thead><tr><th>#</th><th>Player</th><th>Role</th></tr></thead>
+                <tbody>
+          `;
+          (teams[key] || []).forEach((p, idx) => {
+            html += `<tr><td>${idx + 1}</td><td><strong>${p.name}</strong></td><td>${p.role}</td></tr>`;
+          });
+          html += `</tbody></table></div>`;
+        });
+        html += `</div>`;
+        printArea.innerHTML = html;
+        printArea.style.display = "block";
+        window.print();
+        printArea.style.display = "none";
+      });
+    });
+
+    potSelect.addEventListener("change", () => {
+      renderPlayerList();
+      setupMysteryBoxes();
+    });
+
+    /* =================================================================
+       14. SAFE INITIAL STARTUP
+       ================================================================= */
+    function initializeApp() {
+      // 1. Ensure team buckets exist
+      teamOrder.forEach(t => {
+        if (!teams[t]) teams[t] = [];
+      });
+
+      // 2. Initial round-robin baseline
+      autoGenerateRoundRobin(false);
+
+      // 3. Populate base UI
+      populateMatchTeamSelects();
+      renderPlayerList();
+      renderTeamRosters();
+      setupMysteryBoxes();
+      renderVideoStream();
+
+      // 4. Connect Firebase Sync
+      initRealtimeSync();
+
+      // 5. Default to Viewer and launch the role gate modal
+      setRole("viewer");
+      openRoleGateModal();
+    }
+
+    window.addEventListener("DOMContentLoaded", initializeApp);
+  </script>
+</body>
+</html>

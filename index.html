@@ -2506,68 +2506,48 @@
     }
 
     /* =================================================================
-       5. INDEXEDDB REPOSITORY FOR SAVED ARCHIVES & MEMORIES
+       5. FIREBASE REPOSITORY FOR SAVED ARCHIVES & MEMORIES
        ================================================================= */
-    const DB_NAME = "VolleyballTournamentDB";
-    const DB_VERSION = 1;
-    const STORE_NAME = "saved_tournaments";
-
-    function openDatabase() {
-      return new Promise((resolve, reject) => {
-        const req = indexedDB.open(DB_NAME, DB_VERSION);
-        req.onupgradeneeded = (e) => {
-          const db = e.target.result;
-          if (!db.objectStoreNames.contains(STORE_NAME)) {
-            db.createObjectStore(STORE_NAME, { keyPath: "id" });
-          }
-        };
-        req.onsuccess = () => resolve(req.result);
-        req.onerror = () => reject(req.error);
-      });
-    }
+       
+    // Create a reference to a new node in your Firebase database
+    const archivesRef = fbDb ? fbDb.ref("saved_tournaments") : null;
 
     async function dbSaveRecord(record) {
-      const db = await openDatabase();
-      return new Promise((resolve, reject) => {
-        const tx = db.transaction(STORE_NAME, "readwrite");
-        const store = tx.objectStore(STORE_NAME);
-        store.put(record);
-        tx.oncomplete = () => resolve(record);
-        tx.onerror = () => reject(tx.error);
-      });
+      if (!archivesRef) {
+        alert("Firebase not connected. Cannot save archive.");
+        return;
+      }
+      // Save the record to Firebase under its unique ID
+      await archivesRef.child(record.id).set(record);
+      return record;
     }
 
     async function dbGetAllRecords() {
-      const db = await openDatabase();
-      return new Promise((resolve, reject) => {
-        const tx = db.transaction(STORE_NAME, "readonly");
-        const store = tx.objectStore(STORE_NAME);
-        const req = store.getAll();
-        req.onsuccess = () => resolve(req.result || []);
-        req.onerror = () => reject(req.error);
-      });
+      if (!archivesRef) return [];
+      
+      // Fetch all archives from Firebase
+      const snapshot = await archivesRef.once("value");
+      const data = snapshot.val();
+      
+      if (!data) return [];
+      
+      // Convert the Firebase object into an array
+      return Object.values(data);
     }
 
     async function dbGetRecord(id) {
-      const db = await openDatabase();
-      return new Promise((resolve, reject) => {
-        const tx = db.transaction(STORE_NAME, "readonly");
-        const store = tx.objectStore(STORE_NAME);
-        const req = store.get(id);
-        req.onsuccess = () => resolve(req.result);
-        req.onerror = () => reject(req.error);
-      });
+      if (!archivesRef) return null;
+      
+      // Fetch a specific archive by ID
+      const snapshot = await archivesRef.child(id).once("value");
+      return snapshot.val();
     }
 
     async function dbDeleteRecord(id) {
-      const db = await openDatabase();
-      return new Promise((resolve, reject) => {
-        const tx = db.transaction(STORE_NAME, "readwrite");
-        const store = tx.objectStore(STORE_NAME);
-        store.delete(id);
-        tx.oncomplete = () => resolve();
-        tx.onerror = () => reject(tx.error);
-      });
+      if (!archivesRef) return;
+      
+      // Remove the specific archive from Firebase
+      await archivesRef.child(id).remove();
     }
 
     /* =================================================================
